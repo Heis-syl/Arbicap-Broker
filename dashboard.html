@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .kyc-banner {
+      background: linear-gradient(90deg, rgba(245,166,35,0.12), rgba(45,106,255,0.08));
+      border: 1px solid rgba(245,166,35,0.3); border-radius: var(--radius-lg);
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .kyc-banner-left { display: flex; align-items: center; gap: 12px; }
+    .portfolio-chart-wrap {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px;
+    }
+    .portfolio-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .portfolio-value { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; }
+    .portfolio-change { font-size: 0.88rem; margin-top: 4px; }
+    .chart-mini { width: 100%; height: 140px; position: relative; }
+    .chart-mini canvas { width: 100%; height: 100%; }
+    .chart-range-btns { display: flex; gap: 4px; }
+    .range-btn { padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 600; background: none; border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+    .range-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    .assets-table-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 24px; }
+    .assets-row-actions { display: flex; gap: 6px; }
+
+    .activity-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .activity-icon.deposit { background: var(--green-dim); }
+    .activity-icon.withdraw { background: var(--red-dim); }
+    .activity-icon.trade { background: var(--accent-glow); }
+    .activity-icon.p2p { background: rgba(0,194,203,0.12); }
+    .activity-info { flex: 1; }
+    .activity-title { font-size: 0.88rem; font-weight: 500; }
+    .activity-meta { font-size: 0.75rem; color: var(--text-muted); }
+    .activity-amount { text-align: right; }
+    .activity-amount .value { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 600; }
+    .activity-amount .sub { font-size: 0.72rem; color: var(--text-muted); }
+
+    .quick-actions { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
+    .quick-action {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px; text-align: center;
+      cursor: pointer; transition: all 0.15s; text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .quick-action:hover { border-color: var(--accent); background: var(--accent-glow); }
+    .quick-action-icon { font-size: 1.5rem; }
+    .quick-action-label { font-size: 0.8rem; font-weight: 600; }
+
+    .referral-card {
+      background: linear-gradient(135deg, rgba(45,106,255,0.1), rgba(0,194,203,0.08));
+      border: 1px solid rgba(45,106,255,0.2); border-radius: var(--radius-lg); padding: 20px;
+    }
+    .ref-code-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px; margin: 12px 0;
+    }
+    .ref-code { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; flex: 1; letter-spacing: 0.08em; color: var(--accent); }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<nav class="navbar" id="main-navbar">
+  <div class="container">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div>
+      <span data-app-name>Arbicap</span>
+    </a>
+    <div class="nav-links">
+      <a href="markets.html">Markets</a>
+      <a href="trade.html">Trade</a>
+      <a href="p2p.html">P2P</a>
+      <a href="dashboard.html" class="active">Dashboard</a>
+    </div>
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" id="sidebar-toggle" aria-label="Toggle menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <line x1="3" y1="6" x2="17" y2="6" id="tog-l1"/>
+        <line x1="3" y1="10" x2="17" y2="10" id="tog-l2"/>
+        <line x1="3" y1="14" x2="17" y2="14" id="tog-l3"/>
+      </svg>
+    </button>
+    <div class="nav-actions">
+      <button class="btn btn-ghost btn-sm notif-dot"></button>
+      <button class="btn btn-secondary btn-sm" onclick="Auth.logout()">Sign Out</button>
+    </div>
+  </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a href="dashboard.html" class="sidebar-link active"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg></span> Dashboard</a>
+      <a href="trade.html" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 7,9 11,12 18,5"/><polyline points="14,5 18,5 18,9"/></svg></span> Spot Trade</a>
+      <a href="p2p.html" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="10" r="3"/><circle cx="15" cy="10" r="3"/><line x1="8" y1="10" x2="12" y2="10"/><polyline points="10,8 12,10 10,12"/></svg></span> P2P</a>
+      <a href="markets.html" class="sidebar-link" onclick="event.stopPropagation()"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="3" height="6"/><rect x="7" y="8" width="3" height="10"/><rect x="12" y="4" width="3" height="14"/><rect x="17" y="9" width="1" height="9"/></svg></span> Markets</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Wallet</div>
+      <a href="wallet.html" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="12" rx="1.5"/><path d="M2 8h16"/><circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg></span> Wallet</a>
+      <a href="wallet.html#deposit" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="13"/><polyline points="6,9 10,13 14,9"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg></span> Deposit</a>
+      <a href="wallet.html#withdraw" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="13" x2="10" y2="3"/><polyline points="6,7 10,3 14,7"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg></span> Withdraw</a>
+      <a href="wallet.html#history" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><polyline points="10,5.5 10,10 13,12"/></svg></span> History</a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Account</div>
+      <a href="profile.html" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg></span> Profile & KYC</a>
+      <a href="profile.html#security" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L3 5v5c0 4.42 3.03 8.56 7 9.93C14.97 18.56 18 14.42 18 10V5L10 2z"/><polyline points="7,10 9,12 13,8"/></svg></span> Security</a>
+      <a href="profile.html#api" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="8.5" r="4"/><line x1="11" y1="12" x2="18" y2="12"/><line x1="15" y1="12" x2="15" y2="15"/><line x1="18" y1="12" x2="18" y2="14"/></svg></span> API Keys</a>
+      <a href="#" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="16" height="10" rx="1"/><rect x="2" y="5" width="16" height="3" rx="1"/><line x1="10" y1="5" x2="10" y2="18"/><path d="M10 5C10 5 8 2 6 4s1 1 4 1"/><path d="M10 5C10 5 12 2 14 4s-1 1-4 1"/></svg></span> Referrals</a>
+    </div>
+    <div class="sidebar-bottom">
+      <a href="#" class="sidebar-link"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M8 8a2 2 0 114 0c0 1.5-2 2-2 3"/><circle cx="10" cy="15" r="0.75" fill="currentColor" stroke="none"/></svg></span> Help Center</a>
+      <a href="#" class="sidebar-link" onclick="Auth.logout();return false;"><span class="icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3"/><polyline points="13,7 17,10 13,13"/><line x1="6" y1="10" x2="17" y2="10"/></svg></span> Sign Out</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- KYC Banner -->
+    <div class="kyc-banner">
+      <div class="kyc-banner-left">
+        <span style="font-size:1.4rem;"></span>
+        <div>
+          <div style="font-size:0.9rem;font-weight:600;color:var(--yellow);">Complete KYC Verification</div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);">Verify your identity to unlock full deposit, withdrawal, and trading limits.</div>
+        </div>
+      </div>
+      <a href="profile.html#kyc" class="btn btn-sm" style="background:var(--yellow);color:#000;font-weight:700;">Verify Now →</a>
+    </div>
+
+    <!-- Greeting + Quick Actions -->
+    <div class="page-header flex justify-between items-center" style="flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="page-title">Welcome back, <span id="user-firstname">there</span></div>
+        <div class="page-subtitle">Here's your portfolio overview</div>
+      </div>
+      <div class="flex gap-8">
+        <a href="wallet.html#deposit" class="btn btn-primary btn-sm">Deposit</a>
+        <a href="wallet.html#withdraw" class="btn btn-secondary btn-sm">Withdraw</a>
+        <a href="trade.html" class="btn btn-secondary btn-sm">Trade →</a>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid-4 mb-24">
+      <div class="stat-card">
+        <div class="stat-label">Total Portfolio Value</div>
+        <div class="stat-value" id="stat-total">$0.00</div>
+        <div class="stat-change text-green"><span id="stat-total-change">No activity yet</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Available Balance</div>
+        <div class="stat-value" id="total-portfolio-value">$0.00</div>
+        <div class="stat-change text-secondary"><span id="stat-avail-sub">USDT · Ready to trade</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Open Orders</div>
+        <div class="stat-value" id="stat-orders">0</div>
+        <div class="stat-change text-accent" style="cursor:pointer;" onclick="showToast('No open orders yet','info')">No orders →</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">P2P Trades (Active)</div>
+        <div class="stat-value">0</div>
+        <div class="stat-change text-yellow"><span id="stat-p2p-sub">No trades yet</span></div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <a href="wallet.html#deposit" class="quick-action"><span class="quick-action-icon"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="13"/><polyline points="6,9 10,13 14,9"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg></span><span class="quick-action-label">Deposit</span></a>
+      <a href="wallet.html#withdraw" class="quick-action"><span class="quick-action-icon"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="13" x2="10" y2="3"/><polyline points="6,7 10,3 14,7"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg></span><span class="quick-action-label">Withdraw</span></a>
+      <a href="trade.html" class="quick-action"><span class="quick-action-icon"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 7,9 11,12 18,5"/><polyline points="14,5 18,5 18,9"/></svg></span><span class="quick-action-label">Trade</span></a>
+      <a href="p2p.html" class="quick-action"><span class="quick-action-icon"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="10" r="3"/><circle cx="15" cy="10" r="3"/><line x1="8" y1="10" x2="12" y2="10"/><polyline points="10,8 12,10 10,12"/></svg></span><span class="quick-action-label">P2P Buy</span></a>
+    </div>
+
+    <!-- Portfolio chart -->
+    <div class="portfolio-chart-wrap">
+      <div class="portfolio-header">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:4px;">Total Portfolio Value</div>
+          <div class="portfolio-value" id="portfolio-value">$0.00</div>
+          <div class="portfolio-change text-secondary" id="portfolio-change">No activity yet</div>
+        </div>
+        <div class="chart-range-btns">
+          <button class="range-btn">1D</button>
+          <button class="range-btn active">1W</button>
+          <button class="range-btn">1M</button>
+          <button class="range-btn">3M</button>
+          <button class="range-btn">All</button>
+        </div>
+      </div>
+      <div class="chart-mini" aria-label="Portfolio chart placeholder">
+        <canvas id="portfolio-canvas"></canvas>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;" class="assets-grid">
+
+      <!-- Holdings -->
+      <div class="assets-table-card">
+        <div class="card-header" style="padding:14px 16px;">
+          <span class="card-title">My Holdings</span>
+          <a href="wallet.html" class="caption text-accent">View wallet →</a>
+        </div>
+        <table>
+          <thead><tr><th>Asset</th><th>Balance</th><th>Value</th><th>24h</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td colspan="5" style="text-align:center;color:var(--text-muted);padding:28px 16px;font-size:0.85rem;">No holdings yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="activity-card">
+        <div class="card-header" style="padding:14px 16px;">
+          <span class="card-title">Recent Activity</span>
+          <a href="wallet.html#history" class="caption text-accent">View all</a>
+        </div>
+        <div id="activity-list">
+          <div style="text-align:center;color:var(--text-muted);padding:32px;font-size:0.85rem;">
+            No recent activity yet
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Open Orders -->
+    <div class="card mb-24">
+      <div class="card-header">
+        <span class="card-title">Open Orders</span>
+        <button class="btn btn-ghost btn-sm text-red" onclick="showToast('No open orders yet','warning')">Cancel All</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Pair</th><th>Type</th><th>Side</th><th>Price</th><th>Amount</th><th>Filled</th><th>Total</th><th>Status</th><th></th></tr></thead>
+          <tbody id="orders-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px;font-size:0.85rem;">No open orders</td></tr></tbody>
+    <!-- Referral card -->
+    <div class="referral-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-size:0.88rem;font-weight:700;margin-bottom:4px;"> Refer a Friend — Earn Together</div>
+          <div style="font-size:0.82rem;color:var(--text-secondary);">You earn 20% of their trading fees for life. Your friend gets a fee discount on their first 30 days.</div>
+          <div class="ref-code-box">
+            <span class="ref-code" id="ref-code">—</span>
+            <button class="btn btn-secondary btn-sm" onclick="copyToClipboard(document.getElementById('ref-code').textContent,'Referral code')">Copy</button>
+          </div>
+          <div class="caption">Referrals: <strong>0 friends</strong> · Earned: <strong>$0.00</strong></div>
+        </div>
+        <div style="text-align:right;">
+          <button class="btn btn-primary btn-sm" onclick="copyToClipboard('https://arbicap.vercel.app/register?ref=' + document.getElementById('ref-code').textContent,'Link')">Share Link</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  // Portfolio chart
+  const canvas = document.getElementById('portfolio-canvas');
+  if (canvas) {
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = 140;
+    const ctx = canvas.getContext('2d');
+    const pts = [10200,10400,9800,11000,10800,11400,12000,11800,12400,12840];
+    const w = canvas.width, h = canvas.height;
+    const min = Math.min(...pts) * 0.99, max = Math.max(...pts) * 1.01;
+    const scaleX = w / (pts.length - 1);
+    const scaleY = h / (max - min);
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(45,106,255,0.25)');
+    grad.addColorStop(1, 'rgba(45,106,255,0)');
+
+    ctx.beginPath();
+    pts.forEach((v, i) => {
+      const x = i * scaleX, y = h - (v - min) * scaleY;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#2D6AFF'; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  document.querySelectorAll('.range-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+</script>
+</body>
+</html>

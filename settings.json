@@ -1,0 +1,9 @@
+{
+  "liveServer.settings.port": 5500,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "liveServer.settings.donotVerifyTags": true,
+  "liveServer.settings.file": "index.html",
+  "editor.formatOnSave": true,
+  "html.format.wrapLineLength": 0,
+  "emmet.includeLanguages": { "html": "html" }
+}

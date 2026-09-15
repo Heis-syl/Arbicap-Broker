@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P2P Trading — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .p2p-page { padding-top: 60px; min-height: 100vh; }
+    .p2p-hero { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 32px 0 0; }
+    .p2p-hero-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 0; }
+    .p2p-stats { display: flex; gap: 28px; }
+    .p2p-stat { display: flex; flex-direction: column; gap: 2px; }
+    .p2p-stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .p2p-stat-value { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; }
+
+    .p2p-filter-strip {
+      display: flex; align-items: center; gap: 12px;
+      flex-wrap: wrap; padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .coin-tabs { display: flex; gap: 6px; }
+    .coin-tab {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: var(--radius-pill);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .coin-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .coin-tab .coin-icon { width: 18px; height: 18px; font-size: 0.55rem; }
+
+    .p2p-body { padding: 28px 0 60px; }
+    .p2p-layout { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+
+    /* Ad cards */
+    .ad-table-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ad-table-header { display: grid; grid-template-columns: 2fr 1.2fr 1.5fr 1.5fr 1fr; padding: 10px 16px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--bg-elevated); }
+    .ad-row { display: grid; grid-template-columns: 2fr 1.2fr 1.5fr 1.5fr 1fr; padding: 14px 16px; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.1s; }
+    .ad-row:last-child { border-bottom: none; }
+    .ad-row:hover { background: var(--bg-hover); }
+    .ad-trader { display: flex; align-items: center; gap: 8px; }
+    .trader-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; flex-shrink: 0; }
+    .trader-name { font-size: 0.88rem; font-weight: 600; }
+    .trader-stats { font-size: 0.72rem; color: var(--text-muted); }
+    .ad-price-val { font-family: var(--font-mono); font-size: 0.92rem; font-weight: 600; }
+    .ad-price-cur { font-size: 0.72rem; color: var(--text-muted); }
+    .ad-limit { font-size: 0.82rem; }
+    .ad-limit-sub { font-size: 0.72rem; color: var(--text-muted); }
+    .payment-methods { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pm-tag { font-size: 0.7rem; padding: 2px 7px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-secondary); }
+
+    /* Right panel: quick buy */
+    .p2p-quick-panel { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 16px; }
+    .p2p-quick-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+    .p2p-quick-tabs { display: flex; gap: 0; background: var(--bg-elevated); border-radius: var(--radius); padding: 3px; margin-bottom: 16px; }
+    .p2pq-tab { flex: 1; padding: 7px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; background: none; border: none; cursor: pointer; transition: all 0.15s; }
+    .p2pq-tab.active-buy { background: var(--green); color: var(--bg-base); }
+    .p2pq-tab.active-sell { background: var(--red); color: white; }
+
+    .become-merchant-card {
+      background: linear-gradient(135deg, rgba(45,106,255,0.1), rgba(0,194,203,0.06));
+      border: 1px solid rgba(45,106,255,0.2); border-radius: var(--radius-lg); padding: 20px;
+    }
+    .how-p2p-works { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+    .p2p-step { display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.82rem; }
+    .p2p-step:last-child { margin-bottom: 0; }
+    .p2p-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent-glow); border: 1px solid rgba(45,106,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div>
+      <span data-app-name>Arbicap</span>
+    </a>
+    <div class="nav-links">
+      <a href="markets.html">Markets</a>
+      <a href="trade.html">Trade</a>
+      <a href="p2p.html" class="active">P2P</a>
+      <a href="dashboard.html">Dashboard</a>
+    </div>
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
+    </button>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-ghost btn-sm">Log In</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Sign Up</a>
+    </div>
+  </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="p2p-page">
+  <div class="ticker-banner"><div class="ticker-track" id="ticker-track"></div></div>
+
+  <div class="p2p-hero">
+    <div class="container">
+      <div class="p2p-hero-inner">
+        <div>
+          <h1 class="display-md" style="margin-bottom:4px;">P2P Marketplace</h1>
+          <p class="caption">Trade directly with verified merchants · Funds secured in escrow · Zero fees</p>
+        </div>
+        <div class="p2p-stats">
+          <div class="p2p-stat"><span class="p2p-stat-label">Active Ads</span><span class="p2p-stat-value">1,240</span></div>
+          <div class="p2p-stat"><span class="p2p-stat-label">Merchants</span><span class="p2p-stat-value">380</span></div>
+          <div class="p2p-stat"><span class="p2p-stat-label">Avg Complete</span><span class="p2p-stat-value">11 min</span></div>
+          <div class="p2p-stat"><span class="p2p-stat-label">Payment Methods</span><span class="p2p-stat-value">100+</span></div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="p2p-filter-strip">
+        <div style="display:flex;gap:4px;background:var(--bg-elevated);padding:3px;border-radius:var(--radius);">
+          <button class="tab active" style="min-width:60px;" id="buy-filter-tab" onclick="setP2PSide('buy',this)">Buy</button>
+          <button class="tab" style="min-width:60px;" onclick="setP2PSide('sell',this)">Sell</button>
+        </div>
+        <div class="coin-tabs">
+          <button class="coin-tab active"><div class="coin-icon coin-btc" style="width:18px;height:18px;font-size:0.5rem;">₿</div>BTC</button>
+          <button class="coin-tab"><div class="coin-icon coin-eth" style="width:18px;height:18px;font-size:0.5rem;">Ξ</div>ETH</button>
+          <button class="coin-tab"><div class="coin-icon coin-usdt" style="width:18px;height:18px;font-size:0.5rem;">₮</div>USDT</button>
+          <button class="coin-tab"><div class="coin-icon coin-bnb" style="width:18px;height:18px;font-size:0.5rem;">B</div>BNB</button>
+          <button class="coin-tab"><div class="coin-icon coin-sol" style="width:18px;height:18px;font-size:0.5rem;">S</div>SOL</button>
+        </div>
+        <select class="form-select" style="width:160px;">
+          <option>All Payment Methods</option>
+          <option>Bank Transfer</option>
+          <option>Mobile Money</option>
+          <option>Card Payment</option>
+          <option>Cash in Person</option>
+          <option>PayPal</option>
+        </select>
+        <select class="form-select" style="width:120px;">
+          <option>All Currencies</option>
+          <option>NGN</option>
+          <option>USD</option>
+          <option>GBP</option>
+          <option>EUR</option>
+          <option>GHS</option>
+          <option>KES</option>
+        </select>
+        <input type="number" class="form-input" placeholder="Amount (USDT)" style="width:160px;" />
+        <button class="btn btn-primary btn-sm" onclick="showToast('Filtering ads...','info')">Search</button>
+        <button class="btn btn-secondary btn-sm" onclick="p2pComingSoon(event)">+ Post Ad</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="p2p-body">
+    <div class="container">
+      <div class="p2p-layout">
+
+        <!-- AD LIST -->
+        <div>
+          <div class="ad-table-wrap">
+            <div class="ad-table-header">
+              <span>Advertiser</span>
+              <span>Price</span>
+              <span>Limit / Available</span>
+              <span>Payment</span>
+              <span></span>
+            </div>
+            <div id="p2p-ads"></div>
+          </div>
+          <div style="display:flex;justify-content:center;margin-top:20px;gap:8px;">
+            <button class="btn btn-secondary btn-sm">← Prev</button>
+            <button class="btn btn-primary btn-sm">1</button>
+            <button class="btn btn-secondary btn-sm">2</button>
+            <button class="btn btn-secondary btn-sm">3</button>
+            <button class="btn btn-secondary btn-sm">Next →</button>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="p2p-quick-panel">
+
+          <div class="p2p-quick-card">
+            <div class="p2p-quick-tabs">
+              <button class="p2pq-tab active-buy" onclick="this.className='p2pq-tab active-buy';this.nextElementSibling.className='p2pq-tab';">Buy</button>
+              <button class="p2pq-tab" onclick="this.className='p2pq-tab active-sell';this.previousElementSibling.className='p2pq-tab';">Sell</button>
+            </div>
+            <div class="form-group mb-12">
+              <label class="form-label">I want to spend</label>
+              <div class="input-group">
+                <input type="number" class="form-input w-full" placeholder="100" oninput="calcP2P(this.value)" />
+                <span class="input-suffix">USDT</span>
+              </div>
+            </div>
+            <div class="form-group mb-16">
+              <label class="form-label">I will receive</label>
+              <div class="input-group">
+                <input type="text" class="form-input w-full" id="p2p-receive" placeholder="0.00148..." readonly style="cursor:default;" />
+                <span class="input-suffix">BTC</span>
+              </div>
+            </div>
+            <button class="btn btn-green btn-full" onclick="p2pComingSoon(event)">Find Best Offer →</button>
+            <div class="caption text-center mt-8">Rate: 1 BTC ≈ $67,800 · Zero P2P fees</div>
+          </div>
+
+          <div class="become-merchant-card">
+            <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">Become a Merchant</div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px;">Post your own buy/sell ads. Earn from the spread and build your reputation on the marketplace.</p>
+            <button class="btn btn-secondary btn-full btn-sm" onclick="p2pComingSoon(event)">Apply to be a Merchant</button>
+          </div>
+
+          <div class="how-p2p-works">
+            <div style="font-size:0.88rem;font-weight:600;margin-bottom:12px;">How P2P Works</div>
+            <div class="p2p-step"><div class="p2p-step-num">1</div><div>Choose an ad and click <strong>Buy</strong> or <strong>Sell</strong></div></div>
+            <div class="p2p-step"><div class="p2p-step-num">2</div><div>Crypto is locked in escrow automatically</div></div>
+            <div class="p2p-step"><div class="p2p-step-num">3</div><div>Make your fiat payment to the seller</div></div>
+            <div class="p2p-step"><div class="p2p-step-num">4</div><div>Seller confirms and escrow releases crypto to you</div></div>
+            <div class="p2p-step"><div class="p2p-step-num">5</div><div>Dispute? Our team resolves within 24 hours</div></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- POST AD MODAL -->
+<div class="modal-overlay" id="post-ad-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title">Post a P2P Ad</span>
+      <button class="modal-close"><svg width='10' height='10' viewBox='0 0 20 20' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'><line x1='4' y1='4' x2='16' y2='16'/><line x1='16' y1='4' x2='4' y2='16'/></svg></button>
+    </div>
+    <div class="alert alert-info mb-16">Only verified merchants can post ads. <a href="profile.html#kyc" class="text-accent">Complete KYC</a> and apply for merchant status first.</div>
+    <div class="form-group mb-12">
+      <label class="form-label">Ad Type</label>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-green" style="flex:1;" id="modal-buy-btn" onclick="setAdType('buy')">I'm Buying</button>
+        <button class="btn btn-secondary" style="flex:1;" id="modal-sell-btn" onclick="setAdType('sell')">I'm Selling</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="mb-12">
+      <div class="form-group">
+        <label class="form-label">Cryptocurrency</label>
+        <select class="form-select w-full">
+          <option>BTC</option><option>ETH</option><option>USDT</option><option>BNB</option><option>SOL</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fiat Currency</label>
+        <select class="form-select w-full">
+          <option>USD</option><option>NGN</option><option>GBP</option><option>EUR</option><option>GHS</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group mb-12">
+      <label class="form-label">Your Price (per BTC)</label>
+      <div class="input-group"><input type="number" class="form-input w-full" placeholder="67800.00" /><span class="input-suffix">USD</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" class="mb-12">
+      <div class="form-group"><label class="form-label">Min Limit</label><div class="input-group"><input type="number" class="form-input w-full" placeholder="50" /><span class="input-suffix">USD</span></div></div>
+      <div class="form-group"><label class="form-label">Max Limit</label><div class="input-group"><input type="number" class="form-input w-full" placeholder="5000" /><span class="input-suffix">USD</span></div></div>
+    </div>
+    <div class="form-group mb-12">
+      <label class="form-label">Payment Methods</label>
+      <select class="form-select w-full" multiple style="height:90px;">
+        <option>Bank Transfer</option><option>Mobile Money</option><option>Card Payment</option><option>Cash in Person</option><option>PayPal</option>
+      </select>
+    </div>
+    <div class="form-group mb-16">
+      <label class="form-label">Trade Terms <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+      <textarea class="form-input w-full" rows="3" placeholder="Add any specific instructions for buyers/sellers..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('post-ad-modal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="showToast('Ad posted successfully!','success');closeModal('post-ad-modal')">Post Ad</button>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  const ADS = [
+    {name:'CryptoKing_NG', trades:893, rate:99.2, price:67800, priceStr:'$67,800.00', min:50,  max:5000,  methods:['Bank Transfer','Mobile Money'], verified:true, online:true, time:'12 min'},
+    {name:'FastTrade_Pro',  trades:421, rate:97.8, price:67950, priceStr:'$67,950.00', min:20,  max:2000,  methods:['Mobile Money'], verified:true, online:true, time:'8 min'},
+    {name:'TraderMax',      trades:1240,rate:96.1, price:68100, priceStr:'$68,100.00', min:100, max:10000, methods:['Card Payment','Bank Transfer'], verified:true, online:true, time:'15 min'},
+    {name:'CryptoQueen',    trades:204, rate:98.5, price:67700, priceStr:'$67,700.00', min:30,  max:3000,  methods:['Bank Transfer'], verified:true, online:false, time:'20 min'},
+    {name:'BlockBull',      trades:550, rate:95.4, price:68200, priceStr:'$68,200.00', min:200, max:20000, methods:['Bank Transfer','Cash in Person'], verified:true, online:true, time:'18 min'},
+    {name:'SwiftSwap_NG',   trades:88,  rate:94.0, price:67600, priceStr:'$67,600.00', min:10,  max:500,   methods:['Mobile Money'], verified:false, online:true, time:'30 min'},
+  ];
+
+  function renderAds(data) {
+    document.getElementById('p2p-ads').innerHTML = data.map(ad => `
+      <div class="ad-row">
+        <div class="ad-trader">
+          <div class="trader-avatar">${ad.name[0]}</div>
+          <div>
+            <div class="trader-name">${ad.name}  <span style="width:7px;height:7px;border-radius:50%;background:${ad.online?'var(--green)':'var(--text-muted)'};display:inline-block;margin-left:2px;"></span></div>
+            <div class="trader-stats">${ad.trades} trades · ${ad.rate}% · avg ${ad.time}</div>
+          </div>
+        </div>
+        <div>
+          <div class="ad-price-val text-green">${ad.priceStr}</div>
+          <div class="ad-price-cur">USD / BTC</div>
+        </div>
+        <div>
+          <div class="ad-limit">$${ad.min} – $${ad.max.toLocaleString()}</div>
+          <div class="ad-limit-sub">≈ ${(ad.max/ad.price).toFixed(4)} BTC available</div>
+        </div>
+        <div class="payment-methods">${ad.methods.map(m => `<span class="pm-tag">${m}</span>`).join('')}</div>
+        <div><a href="#" class="btn btn-green btn-sm" onclick="p2pComingSoon(event)">Buy BTC</a></div>
+      </div>`).join('');
+  }
+
+  renderAds(ADS);
+
+  function setP2PSide(side, btn) {
+    document.querySelectorAll('.p2p-filter-strip .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#p2p-ads .btn-green').forEach(b => {
+      b.textContent = side === 'buy' ? 'Buy BTC' : 'Sell BTC';
+      b.className = `btn btn-sm ${side==='buy'?'btn-green':'btn-red'}`;
+    });
+  }
+
+  function calcP2P(val) {
+    const amount = parseFloat(val) || 0;
+    document.getElementById('p2p-receive').value = amount > 0 ? (amount / 67800).toFixed(8) : '';
+  }
+
+  function setAdType(type) {
+    document.getElementById('modal-buy-btn').className = `btn ${type==='buy'?'btn-green':'btn-secondary'}`;
+    document.getElementById('modal-sell-btn').className = `btn ${type==='sell'?'btn-red':'btn-secondary'}`;
+    if (type==='sell') document.getElementById('modal-sell-btn').style.color='white';
+  }
+
+  document.querySelectorAll('.coin-tab').forEach(tab => {
+    tab.addEventListener('click', () => { document.querySelectorAll('.coin-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); });
+  });
+
+  function p2pComingSoon(e) {
+    if (e) e.preventDefault();
+    showToast('P2P trading is coming soon. Stay tuned for the launch announcement.', 'info', 4000);
+  }
+</script>
+  <!-- Mobile bottom navigation -->
+  <nav class="mobile-nav">
+    <a href="dashboard.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+      Home
+    </a>
+    <a href="markets.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="3" height="6"/><rect x="7" y="8" width="3" height="10"/><rect x="12" y="4" width="3" height="14"/></svg>
+      Markets
+    </a>
+    <a href="trade.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 7,9 11,12 18,5"/><polyline points="14,5 18,5 18,9"/></svg>
+      Trade
+    </a>
+    <a href="wallet.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="12" rx="1.5"/><path d="M2 8h16"/><circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+      Wallet
+    </a>
+    <a href="profile.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>
+      Profile
+    </a>
+  </nav>
+</body>
+</html>

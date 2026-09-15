@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Open with Live Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "none",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

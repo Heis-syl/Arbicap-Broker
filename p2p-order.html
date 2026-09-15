@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>P2P Order — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .order-page { padding-top: 60px; min-height: 100vh; background: var(--bg-base); }
+    .order-body { padding: 32px 0 60px; }
+    .order-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
+
+    /* Steps */
+    .order-steps { display: flex; align-items: center; gap: 0; margin-bottom: 28px; }
+    .order-step { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .order-step:last-child { flex: 0; }
+    .order-step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; background: var(--bg-elevated); flex-shrink: 0; transition: all 0.3s; }
+    .order-step.done .order-step-dot { background: var(--green); border-color: var(--green); color: white; }
+    .order-step.active .order-step-dot { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+    .order-step-label { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+    .order-step.active .order-step-label { color: var(--accent); font-weight: 600; }
+    .order-step.done .order-step-label { color: var(--green); }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+    .step-line.done { background: var(--green); }
+
+    /* Timer */
+    .timer-banner { background: var(--red-dim); border: 1px solid rgba(255,69,96,0.3); border-radius: var(--radius-lg); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .timer-label { font-size: 0.85rem; font-weight: 600; color: var(--red); }
+    .timer-value { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--red); }
+
+    /* Order detail */
+    .order-detail-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+    .order-field { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    .order-field:last-child { border-bottom: none; }
+    .order-field-label { color: var(--text-secondary); }
+    .order-field-value { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+    /* Chat */
+    .chat-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .chat-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-dim); display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.8rem; }
+    .chat-messages { height: 300px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .chat-msg { max-width: 80%; }
+    .chat-msg.me { align-self: flex-end; }
+    .chat-bubble { padding: 9px 12px; border-radius: var(--radius-lg); font-size: 0.84rem; line-height: 1.5; }
+    .chat-msg.other .chat-bubble { background: var(--bg-elevated); border-bottom-left-radius: 4px; }
+    .chat-msg.me .chat-bubble { background: var(--accent); color: white; border-bottom-right-radius: 4px; }
+    .chat-time { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+    .chat-msg.me .chat-time { text-align: right; }
+    .chat-input-row { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+    .chat-input { flex: 1; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 9px 12px; font-size: 0.85rem; }
+    .chat-input:focus { border-color: var(--accent); outline: none; }
+
+    /* Action panel */
+    .action-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+    .action-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 12px; }
+    .payment-detail-box { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+    .pd-row { display: flex; justify-content: space-between; font-size: 0.84rem; padding: 5px 0; }
+    .pd-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .pd-label { color: var(--text-secondary); }
+    .pd-value { font-weight: 600; font-family: var(--font-mono); font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+
+    .dispute-link { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 10px; }
+    .dispute-link a { color: var(--red); }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="nav-logo"><div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div><span data-app-name>Arbicap</span></a>
+    <div class="nav-links">
+      <a href="markets.html">Markets</a><a href="trade.html">Trade</a>
+      <a href="p2p.html" class="active">P2P</a><a href="dashboard.html">Dashboard</a>
+    </div>
+    <div class="nav-actions">
+      <a href="dashboard.html" class="btn btn-secondary btn-sm">My Orders</a>
+    </div>
+  </div>
+</nav>
+
+<div class="order-page">
+  <div class="order-body">
+    <div class="container">
+
+      <!-- Breadcrumb -->
+      <div class="breadcrumb mb-16">
+        <a href="p2p.html">P2P</a> <span>/</span> <span>Buy BTC</span> <span>/</span> <span class="text-accent">Order #P2P-20250728-8821</span>
+      </div>
+
+      <!-- Steps -->
+      <div class="order-steps">
+        <div class="order-step done"><div class="order-step-dot">+</div><span class="order-step-label">Place Order</span></div>
+        <div class="step-line done"></div>
+        <div class="order-step active"><div class="order-step-dot">2</div><span class="order-step-label">Make Payment</span></div>
+        <div class="step-line"></div>
+        <div class="order-step"><div class="order-step-dot">3</div><span class="order-step-label">Seller Confirms</span></div>
+        <div class="step-line"></div>
+        <div class="order-step"><div class="order-step-dot">4</div><span class="order-step-label">Crypto Released</span></div>
+      </div>
+
+      <!-- Timer -->
+      <div class="timer-banner">
+        <div>
+          <div class="timer-label">Pay before the timer expires</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);">If you don't pay in time, the order will be cancelled automatically.</div>
+        </div>
+        <div class="timer-value" id="countdown">14:58</div>
+      </div>
+
+      <div class="order-layout">
+
+        <!-- LEFT -->
+        <div>
+          <!-- Order Details -->
+          <div class="order-detail-card">
+            <div class="card-header"><span class="card-title">Order Details</span><span class="badge badge-yellow">Pending Payment</span></div>
+            <div class="order-field"><span class="order-field-label">Order Number</span><span class="order-field-value mono">P2P-20250728-8821 <button onclick="copyToClipboard('P2P-20250728-8821','Order ID')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="11" rx="1"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h3"/></svg></button></span></div>
+            <div class="order-field"><span class="order-field-label">Type</span><span class="order-field-value text-green">Buy BTC</span></div>
+            <div class="order-field"><span class="order-field-label">Advertiser</span><span class="order-field-value">CryptoKing_NG (Verified) <span class="badge badge-green" style="margin-left:4px;">99.2%</span></span></div>
+            <div class="order-field"><span class="order-field-label">Amount (You Receive)</span><span class="order-field-value text-green" style="font-family:var(--font-mono);font-size:1rem;">0.00147 BTC</span></div>
+            <div class="order-field"><span class="order-field-label">Price</span><span class="order-field-value mono">$67,800.00 / BTC</span></div>
+            <div class="order-field"><span class="order-field-label">You Pay</span><span class="order-field-value mono text-accent">$100.00 USD</span></div>
+            <div class="order-field"><span class="order-field-label">Payment Method</span><span class="order-field-value">Bank Transfer</span></div>
+            <div class="order-field"><span class="order-field-label">Escrow Status</span><span class="order-field-value text-green">Locked in Escrow</span></div>
+            <div class="order-field"><span class="order-field-label">Created</span><span class="order-field-value caption">Jul 28, 2025 · 14:32:08</span></div>
+          </div>
+
+          <!-- Payment Instructions -->
+          <div class="action-panel">
+            <div class="action-title">Step 2: Make Payment to Seller</div>
+            <div class="alert alert-warning mb-14">
+              Only pay using the exact details below. Do NOT include "crypto", "bitcoin", or any coin name in the payment reference.
+            </div>
+            <div class="payment-detail-box">
+              <div class="pd-row"><span class="pd-label">Bank Name</span><span class="pd-value">First Bank Nigeria <button onclick="copyToClipboard('First Bank Nigeria','Bank name')" style="background:none;border:none;cursor:pointer;color:var(--accent);"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="11" rx="1"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h3"/></svg></button></span></div>
+              <div class="pd-row"><span class="pd-label">Account Name</span><span class="pd-value">CryptoKing_NG <button onclick="copyToClipboard('CryptoKing_NG','Account name')" style="background:none;border:none;cursor:pointer;color:var(--accent);"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="11" rx="1"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h3"/></svg></button></span></div>
+              <div class="pd-row"><span class="pd-label">Account Number</span><span class="pd-value">2034018890 <button onclick="copyToClipboard('2034018890','Account number')" style="background:none;border:none;cursor:pointer;color:var(--accent);"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="11" rx="1"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h3"/></svg></button></span></div>
+              <div class="pd-row"><span class="pd-label">Amount to Send</span><span class="pd-value text-accent">$100.00 USD</span></div>
+              <div class="pd-row"><span class="pd-label">Reference</span><span class="pd-value">P2P-8821 <button onclick="copyToClipboard('P2P-8821','Reference')" style="background:none;border:none;cursor:pointer;color:var(--accent);"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="11" rx="1"/><path d="M13 7V4a1 1 0 00-1-1H4a1 1 0 00-1 1v9a1 1 0 001 1h3"/></svg></button></span></div>
+            </div>
+
+            <div class="form-group mb-16">
+              <label class="form-label">Upload Payment Proof <span style="color:var(--text-muted);font-weight:400;">(optional but recommended)</span></label>
+              <input type="file" class="form-input" accept="image/*,.pdf" style="padding:8px;" />
+              <span class="form-hint">Screenshot or receipt of your payment</span>
+            </div>
+
+            <button class="btn btn-green btn-full" onclick="p2pComingSoon(event)" id="paid-btn">
+              Confirm Payment
+            </button>
+            <div class="dispute-link mt-8">Having trouble? <a href="#" onclick="p2pComingSoon(event);return false;">Open a Dispute</a></div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Chat -->
+        <div>
+          <div class="chat-card" style="margin-bottom:16px;">
+            <div class="chat-header">
+              <div class="chat-avatar">C</div>
+              <div>
+                <div style="font-size:0.88rem;font-weight:600;">CryptoKing_NG</div>
+                <div style="font-size:0.72rem;color:var(--green);"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px;"></span>Online</div>
+              </div>
+              <span class="caption" style="margin-left:auto;">893 trades · 99.2%</span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-msg other">
+                <div class="chat-bubble">Hello! I've received your order. Please send $100 to the bank account provided. Let me know once payment is done.</div>
+                <div class="chat-time">14:32</div>
+              </div>
+              <div class="chat-msg me">
+                <div class="chat-bubble">Hi! I'll make the payment now. Give me a few minutes.</div>
+                <div class="chat-time">14:33</div>
+              </div>
+              <div class="chat-msg other">
+                <div class="chat-bubble">Sure, take your time. Payment window is 15 minutes.</div>
+                <div class="chat-time">14:33</div>
+              </div>
+            </div>
+            <div class="chat-input-row">
+              <input class="chat-input" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()" />
+              <button class="btn btn-primary btn-sm" onclick="sendMsg()">Send</button>
+            </div>
+          </div>
+
+          <!-- Security Tips -->
+          <div class="card">
+            <div class="card-title mb-12">Safety Reminders</div>
+            <ul style="display:flex;flex-direction:column;gap:8px;">
+              <li class="flex gap-8" style="font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 8,15 17,5"/></svg>Only send payment once you've verified all bank details</li>
+              <li class="flex gap-8" style="font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 8,15 17,5"/></svg>Never release crypto before confirming payment received</li>
+              <li class="flex gap-8" style="font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,10 8,15 17,5"/></svg>Use the platform chat — avoid WhatsApp or Telegram requests</li>
+              <li class="flex gap-8" style="font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/></svg>Never share your account login details or 2FA codes</li>
+              <li class="flex gap-8" style="font-size:0.8rem;"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/></svg>Don't cancel the order if you've already paid</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- DISPUTE MODAL -->
+<div class="modal-overlay" id="dispute-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Open a Dispute</span><button class="modal-close">-</button></div>
+    <div class="alert alert-warning mb-16">Disputes are reviewed within 24 hours by our support team. Please provide as much evidence as possible.</div>
+    <div class="form-group mb-12">
+      <label class="form-label">Reason for Dispute</label>
+      <select class="form-select w-full">
+        <option>Seller is unresponsive</option>
+        <option>I paid but seller won't release crypto</option>
+        <option>Wrong bank details provided</option>
+        <option>Seller is pressuring me to cancel</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="form-group mb-12">
+      <label class="form-label">Description</label>
+      <textarea class="form-input w-full" rows="4" placeholder="Describe the issue in detail..."></textarea>
+    </div>
+    <div class="form-group mb-16">
+      <label class="form-label">Evidence (screenshot, receipt)</label>
+      <input type="file" class="form-input" accept="image/*,.pdf" style="padding:8px;" />
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('dispute-modal')">Cancel</button>
+      <button class="btn btn-red" style="flex:1;" onclick="p2pComingSoon(event)">Submit Dispute</button>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  // Countdown timer
+  let secs = 14 * 60 + 58;
+  const tick = setInterval(() => {
+    secs--;
+    if (secs <= 0) { clearInterval(tick); document.getElementById('countdown').textContent = '00:00'; showToast('Order expired due to payment timeout', 'error'); return; }
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    document.getElementById('countdown').textContent = `${m}:${s}`;
+    if (secs <= 120) document.getElementById('countdown').style.color = 'var(--red)';
+  }, 1000);
+
+  function sendMsg() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    const msgs = document.getElementById('chat-messages');
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+    msgs.innerHTML += `<div class="chat-msg me"><div class="chat-bubble">${text}</div><div class="chat-time">${time}</div></div>`;
+    input.value = '';
+    msgs.scrollTop = msgs.scrollHeight;
+    // Simulate reply
+    setTimeout(() => {
+      msgs.innerHTML += `<div class="chat-msg other"><div class="chat-bubble">Thank you, I'll check my account and release the BTC once confirmed.</div><div class="chat-time">${time}</div></div>`;
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 2000);
+  }
+
+  function p2pComingSoon(e) {
+    if (e) e.preventDefault();
+    showToast('P2P trading is coming soon. This feature will be active on launch.', 'info', 4000);
+  }
+
+  function confirmPayment() {
+    const btn = document.getElementById('paid-btn');
+    btn.textContent = 'Notifying seller...'; btn.disabled = true;
+    setTimeout(() => {
+      showToast('Seller notified. Waiting for them to confirm receipt.', 'success');
+      btn.textContent = '⏳ Waiting for Seller Confirmation';
+    }, 1500);
+  }
+</script>
+</body>
+</html>

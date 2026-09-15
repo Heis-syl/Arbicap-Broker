@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallet — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .wallet-page { padding-top: 60px; min-height: 100vh; }
+    .wallet-hero { background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 32px 0; }
+    .wallet-total { font-family: var(--font-mono); font-size: 2.4rem; font-weight: 700; }
+    .wallet-sub { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+    .wallet-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+    .wallet-body { padding: 28px 0 60px; }
+    .wallet-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+
+    /* Asset list */
+    .asset-list-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .asset-list-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .asset-search { display: flex; gap: 8px; align-items: center; }
+    .asset-search input { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 6px 10px; font-size: 0.82rem; width: 180px; }
+    .toggle-zero { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+    .toggle-zero input { accent-color: var(--accent); }
+
+    .asset-row { display: grid; grid-template-columns: 2fr 1.4fr 1.4fr 1fr 1fr; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    .asset-row:last-child { border-bottom: none; }
+    .asset-row:hover { background: var(--bg-hover); }
+    .asset-info { display: flex; align-items: center; gap: 10px; }
+    .asset-name-block .name { font-size: 0.9rem; font-weight: 600; }
+    .asset-name-block .full { font-size: 0.75rem; color: var(--text-muted); }
+    .asset-bal { font-family: var(--font-mono); font-size: 0.88rem; }
+    .asset-bal-usd { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .asset-row-btns { display: flex; gap: 6px; }
+
+    /* Right panel */
+    .right-panel { display: flex; flex-direction: column; gap: 16px; }
+    .action-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .action-card-tabs { display: flex; }
+    .action-tab { flex: 1; padding: 12px; font-size: 0.85rem; font-weight: 600; text-align: center; background: var(--bg-elevated); border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+    .action-tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg-surface); }
+    .action-body { padding: 20px; }
+
+    .qr-placeholder { width: 140px; height: 140px; background: white; border-radius: var(--radius); margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; color: #000; font-size: 0.72rem; text-align: center; border: 1px solid var(--border); padding: 10px; }
+    .addr-box { display: flex; align-items: center; gap: 8px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+    .addr-text { font-family: var(--font-mono); font-size: 0.75rem; flex: 1; word-break: break-all; color: var(--text-secondary); }
+
+    .network-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .network-pill { padding: 5px 12px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); cursor: pointer; }
+    .network-pill.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+    /* History */
+    .history-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-top: 24px; }
+    .history-filters { display: flex; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .history-row { display: grid; grid-template-columns: 1fr 1fr 1.2fr 1fr 0.8fr 1fr; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+    .history-row:last-child { border-bottom: none; }
+    .history-row:hover { background: var(--bg-hover); }
+    .hist-type-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
+
+    .withdraw-notice { background: var(--yellow); color: #000; border-radius: var(--radius); padding: 8px 12px; font-size: 0.78rem; font-weight: 600; margin-bottom: 14px; }
+    .fee-note { background: var(--bg-elevated); border-radius: var(--radius); padding: 10px 12px; font-size: 0.78rem; color: var(--text-secondary); margin-top: 10px; }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="nav-logo"><div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div><span data-app-name>Arbicap</span></a>
+    <div class="nav-links">
+      <a href="markets.html">Markets</a><a href="trade.html"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 7,9 11,12 18,5"/><polyline points="14,5 18,5 18,9"/></svg> Trade</a>
+      <a href="p2p.html">P2P</a><a href="dashboard.html">Dashboard</a>
+    </div>
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle menu">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
+    </button>
+    <div class="nav-actions">
+      <a href="dashboard.html" class="btn btn-secondary btn-sm">← Dashboard</a>
+    </div>
+  </div>
+</nav>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<div class="wallet-page">
+
+  <!-- HERO -->
+  <div class="wallet-hero">
+    <div class="container">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:20px;">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:6px;">Total Estimated Value</div>
+          <div class="wallet-total">$0.00</div>
+          <div class="wallet-sub">No deposits or trades yet</div>
+          <div class="wallet-actions">
+            <button class="btn btn-primary" onclick="setAction('deposit')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="13"/><polyline points="6,9 10,13 14,9"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> Deposit</button>
+            <button class="btn btn-secondary" onclick="setAction('withdraw')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="13" x2="10" y2="3"/><polyline points="6,7 10,3 14,7"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> Withdraw</button>
+            <a href="trade.html" class="btn btn-secondary">Trade</a>
+            <a href="p2p.html" class="btn btn-secondary"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="10" r="3"/><circle cx="15" cy="10" r="3"/><line x1="8" y1="10" x2="12" y2="10"/></svg> P2P</a>
+          </div>
+        </div>
+        <div style="display:flex;gap:24px;">
+          <div><div class="caption mb-4">In Orders</div><div class="mono" style="font-size:0.95rem;font-weight:600;">$0.00</div></div>
+          <div><div class="caption mb-4">P2P Escrow</div><div class="mono" style="font-size:0.95rem;font-weight:600;">$0.00</div></div>
+          <div><div class="caption mb-4">Available</div><div class="mono" style="font-size:0.95rem;font-weight:600;color:var(--green);">$0.00</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="wallet-body">
+    <div class="container">
+      <div class="wallet-layout">
+
+        <!-- ASSET LIST -->
+        <div>
+          <div class="asset-list-card">
+            <div class="asset-list-header">
+              <span class="card-title">My Assets</span>
+              <div class="asset-search">
+                <input type="text" placeholder="Search asset..." />
+                <label class="toggle-zero"><input type="checkbox" id="hide-zero" onchange="renderAssets()" /> Hide zero</label>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1.4fr 1.4fr 1fr 1fr;padding:8px 16px;font-size:0.72rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-elevated);">
+              <span>Asset</span><span>Total Balance</span><span>Available</span><span>In Orders</span><span></span>
+            </div>
+            <div id="asset-list"></div>
+          </div>
+
+          <!-- History -->
+          <div class="history-card" id="history">
+            <div class="asset-list-header">
+              <span class="card-title">Transaction History</span>
+              <button class="btn btn-secondary btn-sm" onclick="exportHistory()">Export CSV</button>
+            </div>
+            <div class="history-filters">
+              <select class="form-select" style="width:130px;"><option>All Types</option><option>Deposit</option><option>Withdrawal</option><option>Trade</option><option>P2P</option></select>
+              <select class="form-select" style="width:120px;"><option>All Assets</option><option>BTC</option><option>ETH</option><option>USDT</option></select>
+              <input type="date" class="form-input" style="width:145px;" />
+              <input type="date" class="form-input" style="width:145px;" />
+              <button class="btn btn-primary btn-sm">Filter</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.2fr 1fr 0.8fr 1fr;padding:8px 16px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-elevated);">
+              <span>Type</span><span>Asset</span><span>Amount</span><span>Date</span><span>Status</span><span>Tx Hash</span>
+            </div>
+            <div id="history-rows"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--border);">
+              <span class="caption">No transactions yet</span>
+              <div class="flex gap-8"><button class="btn btn-secondary btn-sm" disabled>← Prev</button><button class="btn btn-primary btn-sm" disabled>1</button><button class="btn btn-secondary btn-sm" disabled>Next →</button></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="right-panel">
+          <div class="action-card">
+            <div class="action-card-tabs">
+              <button class="action-tab active" id="dep-tab" onclick="setAction('deposit')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="13"/><polyline points="6,9 10,13 14,9"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="3" x2="10" y2="13"/><polyline points="6,9 10,13 14,9"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> Deposit</button>
+              <button class="action-tab" id="with-tab" onclick="setAction('withdraw')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="13" x2="10" y2="3"/><polyline points="6,7 10,3 14,7"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="13" x2="10" y2="3"/><polyline points="6,7 10,3 14,7"/><rect x="3" y="15" width="14" height="2" rx="1"/></svg> Withdraw</button>
+              
+            </div>
+
+            <!-- DEPOSIT PANEL -->
+            <div class="action-body" id="panel-deposit">
+              <div class="alert alert-info mb-14" style="font-size:0.8rem;">
+                All deposits go to our company wallet. Submit your transaction hash below and your balance is credited <strong>instantly</strong>. No minimum amount. No KYC required.
+              </div>
+
+              <div class="form-group mb-12">
+                <label class="form-label">Select Asset</label>
+                <select class="form-select w-full" id="dep-asset" onchange="updateDepositAddr(this.value)">
+                  <option value="BTC">Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="USDT">Tether (USDT)</option>
+                  <option value="BNB">BNB</option>
+                  <option value="SOL">Solana (SOL)</option>
+                  <option value="XRP">XRP</option>
+                  <option value="LTC">Litecoin (LTC)</option>
+                  <option value="ADA">Cardano (ADA)</option>
+                  <option value="DOGE">Dogecoin (DOGE)</option>
+                </select>
+              </div>
+
+              <div class="form-group mb-12">
+                <label class="form-label">Network</label>
+                <div class="network-pills" id="network-pills">
+                  <span class="network-pill active">Bitcoin (BTC)</span>
+                </div>
+              </div>
+
+              <div class="alert alert-warning mb-12" id="network-warning" style="font-size:0.78rem;">
+                Only send <strong>BTC</strong> on the <strong>Bitcoin</strong> network to this address. Wrong network = permanent loss.
+              </div>
+
+              <label class="form-label mb-8" style="text-align:center;display:block;">Company Deposit Address</label>
+              <div class="addr-box mb-4">
+                <span class="addr-text" id="deposit-addr">Loading...</span>
+                <button class="btn btn-secondary btn-sm" onclick="copyToClipboard(document.getElementById('deposit-addr').textContent,'Address')">⎘ Copy</button>
+              </div>
+              <div id="memo-row" style="display:none;" class="mb-12">
+                <div class="alert alert-warning" style="font-size:0.78rem;">
+                  <strong>MEMO / Destination Tag required:</strong> <span id="dep-memo" class="mono" style="font-weight:700;"></span><br/>
+                  You MUST include this memo or your funds will be lost.
+                  <button onclick="copyToClipboard(document.getElementById('dep-memo').textContent,'Memo')" class="btn btn-secondary btn-sm" style="margin-top:6px;">Copy Memo</button>
+                </div>
+              </div>
+              <div class="fee-note mb-14" id="dep-info" style="font-size:0.78rem;">
+                Minimum deposit: — &nbsp;|&nbsp; Confirmations required: —
+              </div>
+
+              <!-- Step 2: Submit tx hash after sending -->
+              <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;">
+                <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">Step 2 — Confirm Your Transfer</div>
+                <div class="form-group mb-10">
+                  <label class="form-label">Amount Sent</label>
+                  <div class="input-group">
+                    <input type="number" class="form-input w-full" id="dep-amount-sent" placeholder="0.00" step="0.00000001" />
+                    <span class="input-suffix" id="dep-amount-sym">BTC</span>
+                  </div>
+                </div>
+                <div class="form-group mb-14">
+                  <label class="form-label">Transaction Hash / TX ID</label>
+                  <input type="text" class="form-input w-full" id="dep-txhash" placeholder="Paste your blockchain transaction hash here..." />
+                  <span class="form-hint">Find this in your wallet's transaction history after sending.</span>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="submitDepositTx()">Confirm Deposit</button>
+              </div>
+            </div>
+
+            <!-- WITHDRAW PANEL -->
+                        <!-- WITHDRAW PANEL -->
+            <div class="action-body" id="panel-withdraw" style="display:none;">
+              <div class="form-group mb-12">
+                <label class="form-label">Asset</label>
+                <select class="form-select w-full" id="with-asset" onchange="updateWithdrawAsset(this.value)">
+                  <option value="BTC">Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="USDT">Tether (USDT)</option>
+                  <option value="BNB">BNB</option>
+                  <option value="SOL">Solana (SOL)</option>
+                  <option value="XRP">XRP</option>
+                </select>
+              </div>
+              <div class="form-group mb-12">
+                <label class="form-label">Network</label>
+                <select class="form-select w-full" id="with-network">
+                  <option>Bitcoin (BTC)</option>
+                </select>
+              </div>
+              <div class="form-group mb-12">
+                <label class="form-label">Recipient Address</label>
+                <input type="text" class="form-input w-full" id="with-addr" placeholder="Paste wallet address..." />
+              </div>
+              <div class="form-group mb-8">
+                <label class="form-label">Amount</label>
+                <div class="input-group">
+                  <input type="number" class="form-input w-full" id="with-amount" placeholder="0.00" step="0.00000001" />
+                  <span class="input-suffix" id="with-sym">BTC</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:14px;">
+                <span class="text-secondary">Available: <span class="mono" id="with-available">0.00</span></span>
+                <button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:0.75rem;" onclick="setMaxWithdraw()">Max</button>
+              </div>
+              <div class="form-group mb-14">
+                <label class="form-label">2FA Code <span class="caption">(if enabled)</span></label>
+                <input type="text" class="form-input w-full" id="with-2fa" placeholder="6-digit authenticator code" maxlength="6" />
+              </div>
+              <button class="btn btn-primary btn-full" onclick="submitWithdrawForm()">Submit Withdrawal</button>
+            </div>
+<!-- Withdrawal form — uncomment on launch day (also set WITHDRAWALS_LIVE=true in .env)
+              <div class="form-group mb-12">
+                <label class="form-label">Asset</label>
+                <select class="form-select w-full" id="with-asset">
+                  <option value="BTC">Bitcoin (BTC)</option>
+                  <option value="ETH">Ethereum (ETH)</option>
+                  <option value="USDT">Tether (USDT)</option>
+                  <option value="BNB">BNB</option>
+                  <option value="SOL">Solana (SOL)</option>
+                </select>
+              </div>
+              <div class="form-group mb-12">
+                <label class="form-label">Network</label>
+                <select class="form-select w-full" id="with-network">
+                  <option>Bitcoin</option>
+                </select>
+              </div>
+              <div class="form-group mb-12">
+                <label class="form-label">Recipient Address</label>
+                <input type="text" class="form-input w-full" placeholder="Paste address..." id="with-addr" />
+              </div>
+              <div class="form-group mb-8">
+                <label class="form-label">Amount</label>
+                <div class="input-group">
+                  <input type="number" class="form-input w-full" placeholder="0.00" id="with-amount" />
+                  <span class="input-suffix" id="with-sym">BTC</span>
+                </div>
+              </div>
+              <div class="form-group mb-14">
+                <label class="form-label">2FA Code (if enabled)</label>
+                <input type="text" class="form-input w-full" placeholder="6-digit code" maxlength="6" id="with-2fa" />
+              </div>
+              <button class="btn btn-primary btn-full" onclick="handleWithdraw()">Submit Withdrawal</button>
+              -->
+            </div>
+
+            <!-- FIAT PANEL -->
+            
+
+          </div>
+
+          <!-- Address Book -->
+          <div class="card">
+            <div class="card-header"><span class="card-title">Address Book</span><button class="btn btn-secondary btn-sm" onclick="openModal('add-addr-modal')">+ Add</button></div>
+            <div id="addr-book" style="padding:12px 0;text-align:center;color:var(--text-muted);font-size:0.85rem;">
+              No saved addresses yet. Add a withdrawal address to quicken future transactions.
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ADDRESS MODAL -->
+<div class="modal-overlay" id="add-addr-modal">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Withdrawal Address</span><button class="modal-close"><svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/></svg></button></div>
+    <div class="form-group mb-12"><label class="form-label">Label</label><input type="text" class="form-input w-full" placeholder="e.g. My Ledger Wallet" /></div>
+    <div class="form-group mb-12"><label class="form-label">Asset</label><select class="form-select w-full"><option>BTC</option><option>ETH</option><option>USDT</option></select></div>
+    <div class="form-group mb-12"><label class="form-label">Network</label><select class="form-select w-full"><option>Bitcoin</option><option>Ethereum (ERC-20)</option><option>BNB Chain</option></select></div>
+    <div class="form-group mb-16"><label class="form-label">Address</label><input type="text" class="form-input w-full" placeholder="Paste address here..." /></div>
+    <div class="form-group mb-16"><label class="form-label">2FA Code (required)</label><input type="text" class="form-input w-full" placeholder="6-digit code" maxlength="6" /></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('add-addr-modal')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="showToast('Address saved to address book','success');closeModal('add-addr-modal')">Save Address</button>
+    </div>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  const ASSETS = [];
+
+  function renderAssets() {
+    const hideZero = document.getElementById('hide-zero')?.checked;
+    const data = hideZero ? ASSETS.filter(a => parseFloat(a.total) > 0) : ASSETS;
+
+    if (!data.length) {
+      document.getElementById('asset-list').innerHTML = `
+        <div style="padding:22px 16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">
+          No asset holdings yet
+        </div>
+      `;
+      return;
+    }
+
+    document.getElementById('asset-list').innerHTML = data.map(a => {
+      const usd = (parseFloat(a.total) * a.price).toFixed(2);
+      return `<div class="asset-row">
+        <div class="asset-info"><div class="coin-icon ${a.icon}" style="width:28px;height:28px;font-size:0.65rem;">${a.label}</div><div class="asset-name-block"><div class="name">${a.sym}</div><div class="full">${a.name}</div></div></div>
+        <div><div class="asset-bal">${a.total}</div><div class="asset-bal-usd">$${parseFloat(usd).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
+        <div class="asset-bal">${a.avail}</div>
+        <div class="asset-bal text-muted">${a.locked}</div>
+        <div class="asset-row-btns">
+          <button class="btn btn-primary btn-sm" style="font-size:0.72rem;padding:4px 8px;" onclick="setAction('deposit')">Deposit</button>
+          <button class="btn btn-secondary btn-sm" style="font-size:0.72rem;padding:4px 8px;" onclick="setAction('withdraw')">Withdraw</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderAssets();
+
+  const HISTORY = [];
+
+  document.getElementById('history-rows').innerHTML = HISTORY.length
+    ? HISTORY.map(h => `
+      <div class="history-row">
+        <div class="flex gap-8 items-center"><div class="hist-type-icon ${h.cls}">${h.icon}</div><span style="font-size:0.82rem;font-weight:500;text-transform:capitalize;">${h.type}</span></div>
+        <div class="flex gap-6 items-center"><span class="coin-icon coin-${h.sym.toLowerCase()}" style="width:20px;height:20px;font-size:0.55rem;">${h.sym[0]}</span><span style="font-weight:600;">${h.sym}</span></div>
+        <div class="mono ${h.amount.startsWith('+') ? 'text-green' : 'text-red'}" style="font-size:0.85rem;">${h.amount}</div>
+        <div class="caption">${h.date}</div>
+        <div><span class="badge ${h.status==='Pending'?'badge-yellow':h.status==='Completed'||h.status==='Confirmed'?'badge-green':'badge-blue'}">${h.status}</span></div>
+        <div><span class="mono" style="font-size:0.72rem;color:var(--text-muted);">${h.hash}</span> ${h.hash!=='Internal'&&!h.hash.startsWith('Pending')&&!h.hash.startsWith('P2P')?`<button onclick="copyToClipboard('${h.hash}','Hash')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:0.8rem;">⎘</button>`:''}</div>
+      </div>`).join('')
+    : `<div style="padding:24px 16px;text-align:center;color:var(--text-muted);font-size:0.85rem;">No transaction history yet</div>`;
+
+  function setAction(action) {
+    ['deposit','withdraw'].forEach(a => {
+      document.getElementById(`panel-${a}`).style.display = a === action ? '' : 'none';
+      document.getElementById(`${a==='deposit'?'dep':'with'}-tab`).classList.toggle('active', a === action);
+    });
+  }
+
+  function setFiatMode(mode, btn) {
+    document.querySelectorAll('#panel-fiat .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('fiat-deposit-body').style.display = mode === 'deposit' ? '' : 'none';
+    document.getElementById('fiat-withdraw-body').style.display = mode === 'withdraw' ? '' : 'none';
+  }
+
+  // ── COMPANY WALLET ADDRESSES ─────────────────
+  // Real deposit addresses for each wallet network.
+  const COMPANY_WALLETS = {
+    BTC:  { bitcoin:   'bc1q2wq47jdrsjh2unsx0297qewvqpjwr29ruqrev0' },
+    ETH:  { ethereum:  '0xc8E8CEc49e463D9eb650EC4f6109118DA5e49fA7' },
+    USDT: { ethereum:  '0xc8E8CEc49e463D9eb650EC4f6109118DA5e49fA7', tron: 'TBkKwSah9aV5JkUM8ErU817RzX1M7CpRgq', bsc: '0xc8E8CEc49e463D9eb650EC4f6109118DA5e49fA7' },
+    BNB:  { bsc:       '0xc8E8CEc49e463D9eb650EC4f6109118DA5e49fA7' },
+    SOL:  { solana:    '5P6ZG82A6f24NnPnB9UQFa6T1YgGNFgdV1nrf85KGE5' },
+    XRP:  { xrp:       'rK1zAEL5UZAAA5b1n1pUhf5zA27J2R5sfT' },
+    LTC:  { litecoin:  'LZid81v3B9G2KmzZQABGuwrBegSnCCjvgv' },
+    ADA:  { cardano:   'addr1qy2l4csyqrfykq0w7v0n227fu2c5z0kg23eqjfztd5w6hqq4lt3qgqxjfvq7auclx54unc43gylvs4rjpyjykmga4wqqnsutz5' },
+    DOGE: { dogecoin:  'DLZkxnacqCDFXoWFdwB4eYksntxXXF3moQ' },
+  };
+  const COMPANY_MEMOS = { XRP_xrp: 'NOT REQUIRED' };
+  const MIN_DEPOSITS  = { BTC:0.0001, ETH:0.001, USDT:5, BNB:0.01, SOL:0.01, XRP:1, LTC:0.01, ADA:1, DOGE:1 };
+  const CONFIRMATIONS = { BTC:2, ETH:12, USDT:12, BNB:12, SOL:1, XRP:1, LTC:6, ADA:15, DOGE:6 };
+
+  let currentDepositSym = 'BTC';
+  let currentDepositNet = 'bitcoin';
+
+  function updateDepositAddr(sym) {
+    currentDepositSym = sym;
+    const nets = COMPANY_WALLETS[sym] ? Object.keys(COMPANY_WALLETS[sym]) : [];
+    currentDepositNet = nets[0] || '';
+    const depAmtSym = document.getElementById('dep-amount-sym');
+    if (depAmtSym) depAmtSym.textContent = sym;
+    document.getElementById('network-pills').innerHTML = nets.map((n, i) =>
+      `<span class="network-pill ${i===0?'active':''}" onclick="selectNet(this,'${sym}','${n}')">${n.charAt(0).toUpperCase()+n.slice(1)}</span>`
+    ).join('');
+    renderDepositAddress(sym, nets[0] || '');
+  }
+
+  function selectNet(el, sym, net) {
+    document.querySelectorAll('.network-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    currentDepositNet = net;
+    renderDepositAddress(sym, net);
+  }
+
+  function renderDepositAddress(sym, net) {
+    const addr = COMPANY_WALLETS[sym]?.[net] || 'Not yet configured — contact support';
+    const memo = COMPANY_MEMOS[sym + '_' + net] || null;
+    document.getElementById('deposit-addr').textContent = addr;
+    document.getElementById('network-warning').innerHTML =
+      `Only send <strong>${sym}</strong> on the <strong>${net}</strong> network. Wrong network = permanent loss.`;
+    const depInfo = document.getElementById('dep-info');
+    if (depInfo) depInfo.innerHTML =
+      `Min deposit: <strong>${MIN_DEPOSITS[sym]||'—'} ${sym}</strong> &nbsp;|&nbsp; Confirmations: <strong>${CONFIRMATIONS[sym]||'—'}</strong>`;
+    const memoRow = document.getElementById('memo-row');
+    if (memoRow) {
+      const depMemo = document.getElementById('dep-memo');
+      if (memo && depMemo) { depMemo.textContent = memo; memoRow.style.display = ''; }
+      else memoRow.style.display = 'none';
+    }
+  }
+
+  async function submitDepositTx() {
+    const txHash  = document.getElementById('dep-txhash').value.trim();
+    const amount  = document.getElementById('dep-amount-sent').value;
+    if (!txHash) { showToast('Please enter your transaction hash', 'error'); return; }
+    if (!amount || parseFloat(amount) <= 0) { showToast('Please enter the amount you sent', 'error'); return; }
+    if (parseFloat(amount) < (MIN_DEPOSITS[currentDepositSym] || 0)) {
+      showToast(`Minimum deposit is ${MIN_DEPOSITS[currentDepositSym]} ${currentDepositSym}`, 'error'); return;
+    }
+    const btn = document.querySelector('[onclick="submitDepositTx()"]');
+    if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
+    try {
+      // Uncomment when backend is live:
+      // const res = await fetch('/api/wallet/deposit/submit', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+localStorage.getItem('broker_token') },
+      //   body: JSON.stringify({ symbol: currentDepositSym, network: currentDepositNet, txHash, amount: parseFloat(amount) }),
+      // });
+      // const data = await res.json();
+      // if (!res.ok) throw new Error(data.error);
+      showToast('Deposit confirmed. Your balance has been updated.', 'success', 4000);
+      document.getElementById('dep-txhash').value = '';
+      document.getElementById('dep-amount-sent').value = '';
+    } catch (err) {
+      showToast(err.message || 'Submission failed. Please try again.', 'error');
+    } finally {
+      if (btn) { btn.textContent = 'Confirm Deposit'; btn.disabled = false; }
+    }
+  }
+
+  function exportHistory() { showToast('CSV export downloading...', 'info'); }
+
+  // Initialise
+  updateDepositAddr('BTC');
+  if (window.location.hash === '#withdraw') setAction('withdraw');
+  
+</script>
+  <!-- Mobile bottom navigation -->
+  <nav class="mobile-nav">
+    <a href="dashboard.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+      Home
+    </a>
+    <a href="markets.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="12" width="3" height="6"/><rect x="7" y="8" width="3" height="10"/><rect x="12" y="4" width="3" height="14"/></svg>
+      Markets
+    </a>
+    <a href="trade.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,14 7,9 11,12 18,5"/><polyline points="14,5 18,5 18,9"/></svg>
+      Trade
+    </a>
+    <a href="wallet.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="16" height="12" rx="1.5"/><path d="M2 8h16"/><circle cx="14.5" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+      Wallet
+    </a>
+    <a href="profile.html" class="mobile-nav-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.5"/><path d="M3 18c0-3.87 3.13-7 7-7s7 3.13 7 7"/></svg>
+      Profile
+    </a>
+  </nav>
+</body>
+</html>

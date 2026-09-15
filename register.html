@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .auth-page {
+      min-height: 100vh; display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .auth-left {
+      background: radial-gradient(ellipse 80% 70% at 30% 40%, rgba(45,106,255,0.12) 0%, transparent 70%),
+                  var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      justify-content: space-between; padding: 48px;
+    }
+    .auth-left-brand { display: flex; align-items: center; gap: 10px; }
+    .auth-left-brand .logo-mark { width: 36px; height: 36px; font-size: 0.9rem; }
+    .auth-left-brand span { font-size: 1.2rem; font-weight: 700; }
+    .auth-left-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .auth-left-hero h1 { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 16px; }
+    .auth-left-hero h1 span { color: var(--accent); }
+    .auth-left-hero p { color: var(--text-secondary); line-height: 1.75; margin-bottom: 32px; }
+    .auth-perks { display: flex; flex-direction: column; gap: 14px; }
+    .auth-perk { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; }
+    .auth-perk-icon { width: 32px; height: 32px; border-radius: var(--radius); background: var(--accent-glow); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+    .auth-left-footer { font-size: 0.75rem; color: var(--text-muted); }
+
+    .auth-right {
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      padding: 48px 40px; background: var(--bg-base);
+    }
+    .auth-form-wrap { width: 100%; max-width: 420px; }
+    .auth-form-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+    .auth-form-sub { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 32px; }
+
+    .strength-meter { margin-top: 6px; }
+    .strength-bar { display: flex; gap: 4px; margin-bottom: 4px; }
+    .strength-seg { flex: 1; height: 3px; border-radius: 2px; background: var(--bg-elevated); transition: background 0.3s; }
+    .strength-seg.filled-weak { background: var(--red); }
+    .strength-seg.filled-medium { background: var(--yellow); }
+    .strength-seg.filled-strong { background: var(--green); }
+    .strength-label { font-size: 0.72rem; color: var(--text-muted); }
+
+    .referral-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; margin-top: 4px; }
+    .referral-input { margin-top: 8px; display: none; }
+    .referral-input.open { display: block; }
+
+    .terms-check { display: flex; align-items: flex-start; gap: 10px; font-size: 0.82rem; color: var(--text-secondary); }
+    .terms-check input[type=checkbox] { margin-top: 3px; accent-color: var(--accent); flex-shrink: 0; }
+    .terms-check a { color: var(--accent); }
+
+    @media (max-width: 900px) {
+      .auth-page {
+        grid-template-columns: 1fr;
+      }
+      .auth-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 30px 24px;
+      }
+      .auth-right {
+        padding: 28px 20px 36px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .auth-left,
+      .auth-right {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+      .auth-form-wrap {
+        max-width: 100%;
+      }
+      #step-1 > div[style*="display:grid;grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+      .flex.gap-8 { flex-direction: column; }
+      .flex.gap-8 > * {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<div class="auth-page">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left">
+    <div class="auth-left-brand">
+      <div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div>
+      <span data-app-name>Arbicap</span>
+    </div>
+
+    <div class="auth-left-hero">
+      <h1>Join the Future of <span>Crypto Trading</span></h1>
+      <p>Create your account in minutes and start trading 320+ cryptocurrencies with industry-leading security and the lowest fees.</p>
+      <div class="auth-perks">
+        <div class="auth-perk"><div class="auth-perk-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13,2 7,11 10,11 7,18 13,9 10,9"/></svg></div><span>Trade with 0.1% spot fee — lower as you grow</span></div>
+        <div class="auth-perk"><div class="auth-perk-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13,2 7,11 10,11 7,18 13,9 10,9"/></svg></div><span>Funds insured and stored in cold storage</span></div>
+        <div class="auth-perk"><div class="auth-perk-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2L3 5v5c0 4.42 3.03 8.56 7 9.93C14.97 18.56 18 14.42 18 10V5L10 2z"/><polyline points="7,10 9,12 13,8"/></svg></div><span>P2P marketplace with zero trading fees</span></div>
+        <div class="auth-perk"><div class="auth-perk-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="10" r="3"/><circle cx="15" cy="10" r="3"/><line x1="8" y1="10" x2="12" y2="10"/></svg></div><span>Available in 180+ countries, 24/7 support</span></div>
+      </div>
+    </div>
+
+    <div class="auth-left-footer">
+      Licensed as a regulated digital asset platform · Reg. review in progress<br>
+      © 2025 Arbicap. All rights reserved.
+    </div>
+  </div>
+
+  <!-- RIGHT / FORM -->
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <div class="auth-form-title">Create your account</div>
+      <div class="auth-form-sub">Already have an account? <a href="login.html" class="text-accent">Sign in</a></div>
+
+      <!-- Step indicator -->
+      <div style="display:flex;gap:8px;margin-bottom:28px;align-items:center;">
+        <div style="flex:1;height:3px;border-radius:2px;background:var(--accent);"></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-elevated);" id="step2-bar"></div>
+        <div style="flex:1;height:3px;border-radius:2px;background:var(--bg-elevated);" id="step3-bar"></div>
+        <span class="caption" id="step-label">Step 1 of 3 — Account Info</span>
+      </div>
+
+      <form id="register-form" onsubmit="handleRegister(event)" novalidate>
+        <!-- Step 1 -->
+        <div id="step-1">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div class="form-group">
+              <label class="form-label">First Name</label>
+              <input type="text" class="form-input" placeholder="John" id="first-name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Last Name</label>
+              <input type="text" class="form-input" placeholder="Doe" id="last-name" required />
+            </div>
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" placeholder="you@example.com" id="reg-email" required />
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Country of Residence</label>
+            <div class="relative">
+              <select class="form-select w-full" id="reg-country" style="padding-left:14px;">
+                <option value="">Select your country...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Phone Number</label>
+            <div style="display:flex;gap:8px;">
+              <select class="form-select" id="phone-country-code" style="width:120px;">
+                <option value="+1">+1</option>
+              </select>
+              <input type="tel" class="form-input" style="flex:1;" id="reg-phone" placeholder="8012345678" />
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-full" onclick="nextStep(2)">Continue →</button>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step-2" style="display:none;">
+          <div class="form-group mb-16">
+            <label class="form-label">Password</label>
+            <div class="input-group relative">
+              <input type="password" class="form-input w-full" id="password-input" placeholder="Create a strong password" oninput="checkStrength(this.value)" required />
+              <span class="input-suffix" style="cursor:pointer;" onclick="togglePwd('password-input')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10C4 6 6.5 4 10 4s6 2 8 6c-2 4-4.5 6-8 6s-6-2-8-6z"/><circle cx="10" cy="10" r="2"/></svg></span>
+            </div>
+            <div class="strength-meter">
+              <div class="strength-bar">
+                <div class="strength-seg" id="s1"></div>
+                <div class="strength-seg" id="s2"></div>
+                <div class="strength-seg" id="s3"></div>
+                <div class="strength-seg" id="s4"></div>
+              </div>
+              <span class="strength-label" id="strength-label">Enter a password</span>
+            </div>
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Confirm Password</label>
+            <div class="input-group relative">
+              <input type="password" class="form-input w-full" id="confirm-pwd" placeholder="Repeat your password" required />
+              <span class="input-suffix" style="cursor:pointer;" onclick="togglePwd('confirm-pwd')"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10C4 6 6.5 4 10 4s6 2 8 6c-2 4-4.5 6-8 6s-6-2-8-6z"/><circle cx="10" cy="10" r="2"/></svg></span>
+            </div>
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Anti-Phishing Code <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+            <input type="text" class="form-input" id="anti-phish" placeholder="A word shown in all emails from us" maxlength="20" />
+            <span class="form-hint">Helps you identify genuine emails from Arbicap</span>
+          </div>
+
+          <div style="cursor:pointer;" class="referral-toggle" onclick="toggleReferral()">
+            + Have a referral code?
+          </div>
+          <div class="referral-input" id="referral-input">
+            <input type="text" class="form-input w-full mt-8" id="referral-code" placeholder="Enter referral code" />
+          </div>
+
+          <div class="flex gap-8 mt-16 mb-16">
+            <button type="button" class="btn btn-secondary" onclick="nextStep(1)">← Back</button>
+            <button type="button" class="btn btn-primary" style="flex:1;" onclick="nextStep(3)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step-3" style="display:none;">
+          <div class="alert alert-info mb-16">
+             We'll send a verification code to your email. Check your inbox after registering.
+          </div>
+
+          <div class="form-group mb-16">
+            <label class="form-label">Account Type</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <label style="cursor:pointer;">
+                <input type="radio" name="acct-type" value="individual" checked style="display:none;" />
+                <div class="card" style="padding:14px;border-color:var(--accent);background:var(--accent-glow);cursor:pointer;" id="type-individual">
+                  <div style="font-size:1.2rem;margin-bottom:6px;"></div>
+                  <div style="font-size:0.85rem;font-weight:600;">Individual</div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary);">Personal trading account</div>
+                </div>
+              </label>
+              <label style="cursor:pointer;">
+                <input type="radio" name="acct-type" value="business" style="display:none;" />
+                <div class="card" style="padding:14px;cursor:pointer;" id="type-business">
+                  <div style="font-size:1.2rem;margin-bottom:6px;"></div>
+                  <div style="font-size:0.85rem;font-weight:600;">Business</div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary);">For companies & entities</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="terms-check mb-16">
+            <input type="checkbox" id="terms-check" required />
+            <label for="terms-check">I agree to the <a href="#">Terms of Service</a>, <a href="#">Privacy Policy</a>, and confirm I am at least 18 years old.</label>
+          </div>
+
+          <div class="terms-check mb-24">
+            <input type="checkbox" id="marketing-check" />
+            <label for="marketing-check">I'd like to receive news and promotional offers from Arbicap.</label>
+          </div>
+
+          <div class="flex gap-8">
+            <button type="button" class="btn btn-secondary" onclick="nextStep(2)">← Back</button>
+            <button type="submit" class="btn btn-primary" style="flex:1;" id="submit-btn">
+              Create Account
+            </button>
+          </div>
+        </div>
+      </form>
+  </div>
+
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  const COUNTRY_CODES = [
+    ['Afghanistan', '+93'], ['Albania', '+355'], ['Algeria', '+213'], ['Andorra', '+376'], ['Angola', '+244'], ['Antigua and Barbuda', '+1-268'], ['Argentina', '+54'], ['Armenia', '+374'], ['Australia', '+61'], ['Austria', '+43'], ['Azerbaijan', '+994'], ['Bahamas', '+1-242'], ['Bahrain', '+973'], ['Bangladesh', '+880'], ['Barbados', '+1-246'], ['Belarus', '+375'], ['Belgium', '+32'], ['Belize', '+501'], ['Benin', '+229'], ['Bhutan', '+975'], ['Bolivia', '+591'], ['Bosnia and Herzegovina', '+387'], ['Botswana', '+267'], ['Brazil', '+55'], ['Brunei', '+673'], ['Bulgaria', '+359'], ['Burkina Faso', '+226'], ['Burundi', '+257'], ['Cabo Verde', '+238'], ['Cambodia', '+855'], ['Cameroon', '+237'], ['Canada', '+1'], ['Central African Republic', '+236'], ['Chad', '+235'], ['Chile', '+56'], ['China', '+86'], ['Colombia', '+57'], ['Comoros', '+269'], ['Congo, Democratic Republic', '+243'], ['Congo, Republic', '+242'], ['Costa Rica', '+506'], ['Côte d\'Ivoire', '+225'], ['Croatia', '+385'], ['Cuba', '+53'], ['Cyprus', '+357'], ['Czechia', '+420'], ['Denmark', '+45'], ['Djibouti', '+253'], ['Dominica', '+1-767'], ['Dominican Republic', '+1-809'], ['Ecuador', '+593'], ['Egypt', '+20'], ['El Salvador', '+503'], ['Equatorial Guinea', '+240'], ['Eritrea', '+291'], ['Estonia', '+372'], ['Eswatini', '+268'], ['Ethiopia', '+251'], ['Fiji', '+679'], ['Finland', '+358'], ['France', '+33'], ['Gabon', '+241'], ['Gambia', '+220'], ['Georgia', '+995'], ['Germany', '+49'], ['Ghana', '+233'], ['Greece', '+30'], ['Grenada', '+1-473'], ['Guatemala', '+502'], ['Guinea', '+224'], ['Guinea-Bissau', '+245'], ['Guyana', '+592'], ['Haiti', '+509'], ['Honduras', '+504'], ['Hungary', '+36'], ['Iceland', '+354'], ['India', '+91'], ['Indonesia', '+62'], ['Iran', '+98'], ['Iraq', '+964'], ['Ireland', '+353'], ['Israel', '+972'], ['Italy', '+39'], ['Jamaica', '+1-876'], ['Japan', '+81'], ['Jordan', '+962'], ['Kazakhstan', '+7'], ['Kenya', '+254'], ['Kiribati', '+686'], ['Kuwait', '+965'], ['Kyrgyzstan', '+996'], ['Laos', '+856'], ['Latvia', '+371'], ['Lebanon', '+961'], ['Lesotho', '+266'], ['Liberia', '+231'], ['Libya', '+218'], ['Liechtenstein', '+423'], ['Lithuania', '+370'], ['Luxembourg', '+352'], ['Madagascar', '+261'], ['Malawi', '+265'], ['Malaysia', '+60'], ['Maldives', '+960'], ['Mali', '+223'], ['Malta', '+356'], ['Marshall Islands', '+692'], ['Mauritania', '+222'], ['Mauritius', '+230'], ['Mexico', '+52'], ['Micronesia', '+691'], ['Moldova', '+373'], ['Monaco', '+377'], ['Mongolia', '+976'], ['Montenegro', '+382'], ['Morocco', '+212'], ['Mozambique', '+258'], ['Myanmar', '+95'], ['Namibia', '+264'], ['Nauru', '+674'], ['Nepal', '+977'], ['Netherlands', '+31'], ['New Zealand', '+64'], ['Nicaragua', '+505'], ['Niger', '+227'], ['Nigeria', '+234'], ['North Korea', '+850'], ['North Macedonia', '+389'], ['Norway', '+47'], ['Oman', '+968'], ['Pakistan', '+92'], ['Palau', '+680'], ['Palestine', '+970'], ['Panama', '+507'], ['Papua New Guinea', '+675'], ['Paraguay', '+595'], ['Peru', '+51'], ['Philippines', '+63'], ['Poland', '+48'], ['Portugal', '+351'], ['Qatar', '+974'], ['Romania', '+40'], ['Russia', '+7'], ['Rwanda', '+250'], ['Saint Kitts and Nevis', '+1-869'], ['Saint Lucia', '+1-758'], ['Saint Vincent and the Grenadines', '+1-784'], ['Samoa', '+685'], ['San Marino', '+378'], ['São Tomé and Príncipe', '+239'], ['Saudi Arabia', '+966'], ['Senegal', '+221'], ['Serbia', '+381'], ['Seychelles', '+248'], ['Sierra Leone', '+232'], ['Singapore', '+65'], ['Slovakia', '+421'], ['Slovenia', '+386'], ['Solomon Islands', '+677'], ['Somalia', '+252'], ['South Africa', '+27'], ['South Korea', '+82'], ['South Sudan', '+211'], ['Spain', '+34'], ['Sri Lanka', '+94'], ['Sudan', '+249'], ['Suriname', '+597'], ['Sweden', '+46'], ['Switzerland', '+41'], ['Syria', '+963'], ['Tajikistan', '+992'], ['Tanzania', '+255'], ['Thailand', '+66'], ['Timor-Leste', '+670'], ['Togo', '+228'], ['Tonga', '+676'], ['Trinidad and Tobago', '+1-868'], ['Tunisia', '+216'], ['Türkiye', '+90'], ['Turkmenistan', '+993'], ['Tuvalu', '+688'], ['Uganda', '+256'], ['Ukraine', '+380'], ['United Arab Emirates', '+971'], ['United Kingdom', '+44'], ['United States', '+1'], ['Uruguay', '+598'], ['Uzbekistan', '+998'], ['Vanuatu', '+678'], ['Vatican City', '+379'], ['Venezuela', '+58'], ['Vietnam', '+84'], ['Yemen', '+967'], ['Zambia', '+260'], ['Zimbabwe', '+263']
+  ];
+
+  const countrySelect = document.getElementById('reg-country');
+  const phoneCodeSelect = document.getElementById('phone-country-code');
+
+  if (countrySelect) {
+    COUNTRY_CODES.forEach(([country, code]) => {
+      const option = document.createElement('option');
+      option.value = country;
+      option.textContent = `${country} (${code})`;
+      countrySelect.appendChild(option);
+    });
+  }
+
+  if (phoneCodeSelect) {
+    COUNTRY_CODES.forEach(([country, code]) => {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = `${code}`;
+      phoneCodeSelect.appendChild(option);
+    });
+    phoneCodeSelect.value = '+1';
+  }
+
+  function nextStep(n) {
+    [1,2,3].forEach(i => document.getElementById(`step-${i}`).style.display = i===n ? '' : 'none');
+    const labels = {1:'Step 1 of 3 — Account Info', 2:'Step 2 of 3 — Password', 3:'Step 3 of 3 — Confirm'};
+    document.getElementById('step-label').textContent = labels[n];
+    document.getElementById('step2-bar').style.background = n >= 2 ? 'var(--accent)' : 'var(--bg-elevated)';
+    document.getElementById('step3-bar').style.background = n >= 3 ? 'var(--accent)' : 'var(--bg-elevated)';
+  }
+
+  function checkStrength(val) {
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    const cls = score <= 1 ? 'filled-weak' : score <= 2 ? 'filled-medium' : 'filled-strong';
+    const labels = {0:'Too short',1:'Weak',2:'Fair',3:'Good',4:'Strong'};
+    [1,2,3,4].forEach(i => {
+      const seg = document.getElementById(`s${i}`);
+      seg.className = 'strength-seg' + (i <= score ? ` ${cls}` : '');
+    });
+    document.getElementById('strength-label').textContent = labels[score];
+  }
+
+  function togglePwd(id) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function toggleReferral() {
+    document.getElementById('referral-input').classList.toggle('open');
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    if (!document.getElementById('terms-check').checked) {
+      showToast('Please accept the Terms of Service', 'error'); return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.textContent = 'Creating account...'; btn.disabled = true;
+
+    // Collect form fields
+    const firstName = document.getElementById('first-name')?.value?.trim();
+    const lastName  = document.getElementById('last-name')?.value?.trim();
+    const email     = document.getElementById('reg-email')?.value?.trim();
+    const password  = document.getElementById('password-input')?.value;
+    const country   = document.getElementById('reg-country')?.value;
+    const phone     = document.getElementById('reg-phone')?.value?.trim();
+    const referral  = document.getElementById('referral-code')?.value?.trim();
+
+    if (!firstName || !lastName || !email || !password) {
+      showToast('Please fill in all required fields', 'error');
+      btn.textContent = 'Create Account'; btn.disabled = false;
+      return;
+    }
+    if (password.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
+      btn.textContent = 'Create Account'; btn.disabled = false;
+      return;
+    }
+
+    try {
+      const res = await fetch(`${APP.apiBase}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, email, password, country, phone, referralCode: referral }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      // Reset any stale demo data and persisted state before creating the new account session.
+      Auth.clearAccountState();
+
+      // Save token if returned immediately (for instant login on registration)
+      if (data.token && data.user) {
+        Auth.login(data.token, data.user);
+        showToast('Account created! Welcome to Arbicap.', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 1500);
+      } else {
+        // No instant token, redirect to login
+        showToast('Account created! Check your email to verify and log in.', 'success');
+        setTimeout(() => window.location.href = 'login.html', 2000);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+      btn.textContent = 'Create Account'; btn.disabled = false;
+    }
+  }
+
+  // Account type card toggle
+  document.querySelectorAll('[name=acct-type]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.getElementById('type-individual').style.borderColor = '';
+      document.getElementById('type-individual').style.background = '';
+      document.getElementById('type-business').style.borderColor = '';
+      document.getElementById('type-business').style.background = '';
+      const card = document.getElementById(`type-${radio.value}`);
+      card.style.borderColor = 'var(--accent)';
+      card.style.background = 'var(--accent-glow)';
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Arbicap</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
+  <link rel="apple-touch-icon" href="arbicap-logo.png"/>
+  <meta name="theme-color" content="#0D0F14"/>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .login-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse 70% 50% at 50% 40%, rgba(45,106,255,0.07) 0%, transparent 70%);
+      padding: 40px 20px;
+    }
+    .login-card {
+      width: 100%; max-width: 420px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 36px 32px;
+      box-shadow: var(--shadow-modal);
+    }
+    .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; justify-content: center; }
+    .login-logo .logo-mark { width: 36px; height: 36px; font-size: 0.9rem; }
+    .login-logo span { font-size: 1.2rem; font-weight: 700; }
+    .login-title { font-size: 1.3rem; font-weight: 700; text-align: center; margin-bottom: 4px; }
+    .login-sub { text-align: center; color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 28px; }
+
+    .two-fa-screen { display: none; }
+    .two-fa-screen.visible { display: block; }
+    .otp-inputs { display: flex; gap: 10px; justify-content: center; margin: 20px 0; }
+    .otp-input {
+      width: 48px; height: 56px; border-radius: var(--radius);
+      background: var(--bg-elevated); border: 1px solid var(--border-strong);
+      color: var(--text-primary); font-size: 1.4rem; font-weight: 700;
+      text-align: center; font-family: var(--font-mono);
+      transition: border-color 0.2s;
+    }
+    .otp-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    .forgot-link { float: right; font-size: 0.8rem; color: var(--accent); }
+    .forgot-link:hover { text-decoration: underline; }
+
+    .security-notice {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: var(--bg-elevated); border-radius: var(--radius);
+      padding: 10px 12px; margin-top: 20px; font-size: 0.78rem; color: var(--text-secondary);
+    }
+
+    @media (max-width: 640px) {
+      .login-page {
+        padding: 20px 12px;
+      }
+      .login-card {
+        padding: 24px 18px;
+      }
+      .otp-inputs {
+        gap: 6px;
+      }
+      .otp-input {
+        width: 38px;
+        height: 48px;
+      }
+    }
+  </style>
+</head>
+<div id="google_translate_element" style="position:fixed;bottom:80px;right:16px;z-index:999;"></div>
+<script>
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    includedLanguages: 'es,fr,de,ar,zh-CN,pt,ru,ja,ko,tr,hi,it,nl,pl,sv',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+    autoDisplay: false,
+  }, 'google_translate_element');
+}
+</script>
+<script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<body>
+
+<div class="login-page">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="logo-mark" style="background:none;padding:0;width:32px;height:32px;display:inline-flex;align-items:center;"><svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="acgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D6AFF"/>
+      <stop offset="100%" style="stop-color:#00C2CB"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,8 12,85 28,85 50,40 72,85 88,85" fill="url(#acgrad)"/>
+  <polygon points="36,65 50,40 64,65 57,65 50,52 43,65" fill="#0D0F14"/>
+  <polygon points="64,65 76,85 88,85 75,65" fill="#00C2CB"/>
+</svg></div>
+      <span data-app-name>Arbicap</span>
+    </div>
+
+    <!-- ── LOGIN FORM ── -->
+    <div id="login-screen">
+      <div class="login-title">Welcome back</div>
+      <div class="login-sub">Don't have an account? <a href="register.html" class="text-accent">Sign up free</a></div>
+
+      <form onsubmit="handleLogin(event)" novalidate>
+        <div class="form-group mb-16">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input w-full" id="login-email" placeholder="you@example.com" required />
+        </div>
+
+        <div class="form-group mb-8">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <label class="form-label">Password</label>
+            <a href="#" class="forgot-link" onclick="showForgot(event)">Forgot password?</a>
+          </div>
+          <div class="input-group relative">
+            <input type="password" class="form-input w-full" id="login-pwd" placeholder="Enter your password" required />
+            <span class="input-suffix" style="cursor:pointer;" onclick="togglePwd()"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10C4 6 6.5 4 10 4s6 2 8 6c-2 4-4.5 6-8 6s-6-2-8-6z"/><circle cx="10" cy="10" r="2"/></svg></span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:0.82rem;color:var(--text-secondary);">
+          <input type="checkbox" id="remember-me" style="accent-color:var(--accent);" />
+          <label for="remember-me">Remember this device for 30 days</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">Sign In</button>
+      </form>
+
+      <!-- Google Identity Services script — loads the Google OAuth library -->
+      <!-- Only loads if GOOGLE_CLIENT_ID is set -->
+      <script>
+        if (GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
+          const s = document.createElement('script');
+          s.src = 'https://accounts.google.com/gsi/client';
+          s.async = true; s.defer = true;
+          document.head.appendChild(s);
+        }
+      </script>
+
+      <div class="security-notice">
+         <span>Never share your password. Arbicap staff will <strong>never</strong> ask for your password or 2FA codes.</span>
+      </div>
+    </div>
+
+    <!-- ── 2FA SCREEN ── -->
+    <div id="twofa-screen" class="two-fa-screen">
+      <div style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;"></div>
+        <div class="login-title">Two-Factor Authentication</div>
+        <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:8px;">
+          Enter the 6-digit code from your authenticator app.
+        </p>
+        <p class="caption">Logged in as: <span id="twofa-email" class="text-accent"></span></p>
+      </div>
+
+      <div class="otp-inputs" id="otp-inputs">
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+        <input class="otp-input" maxlength="1" inputmode="numeric" />
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="verify2FA()">Verify & Sign In</button>
+      <div style="text-align:center;margin-top:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="showBackup()">Use backup code instead</button>
+        <button class="btn btn-ghost btn-sm" onclick="backToLogin()">← Change account</button>
+      </div>
+
+      <div id="backup-input" style="display:none;margin-top:12px;">
+        <div class="form-group">
+          <label class="form-label">Backup Recovery Code</label>
+          <input type="text" class="form-input w-full" placeholder="XXXX-XXXX-XXXX-XXXX" />
+        </div>
+        <button class="btn btn-primary btn-full mt-8" onclick="verify2FA()">Verify with Backup</button>
+      </div>
+    </div>
+
+    <!-- ── FORGOT PASSWORD ── -->
+    <div id="forgot-screen" style="display:none;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:2rem;margin-bottom:8px;"></div>
+        <div class="login-title">Reset Password</div>
+        <p style="color:var(--text-secondary);font-size:0.85rem;">We'll send a reset link to your email address.</p>
+      </div>
+      <div class="form-group mb-20">
+        <label class="form-label">Email Address</label>
+        <input type="email" class="form-input w-full" placeholder="you@example.com" />
+      </div>
+      <button class="btn btn-primary btn-full mb-12" onclick="sendReset()">Send Reset Link</button>
+      <button class="btn btn-ghost btn-full" onclick="backToLogin()">← Back to Sign In</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="app.js"></script>
+<script>
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value.trim();
+    const pwd   = document.getElementById('login-pwd').value;
+    if (!email || !pwd) { showToast('Enter your email and password', 'error'); return; }
+
+    const btn = document.getElementById('login-btn');
+    btn.textContent = 'Signing in...'; btn.disabled = true;
+
+    try {
+      const res = await fetch(`${APP.apiBase}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pwd }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+
+      if (data.requires2FA) {
+        // Show 2FA screen
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('twofa-screen').classList.add('visible');
+        document.getElementById('twofa-email').textContent = email;
+        document.querySelectorAll('.otp-input')[0].focus();
+        // Store temp token for 2FA verification
+        window._tempUserId = data.userId;
+      } else {
+        // Direct login — save token and redirect
+        Auth.login(data.token, data.user);
+        showToast('Welcome back!', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      }
+    } catch (err) {
+      showToast(err.message, 'error');
+      btn.textContent = 'Sign In'; btn.disabled = false;
+    }
+  }
+
+  // OTP auto-advance
+  document.querySelectorAll('.otp-input').forEach((input, i, all) => {
+    input.addEventListener('input', () => {
+      if (input.value && i < all.length - 1) all[i + 1].focus();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !input.value && i > 0) all[i - 1].focus();
+    });
+  });
+
+  function verify2FA() {
+    const code = [...document.querySelectorAll('.otp-input')].map(i => i.value).join('');
+    if (code.length < 6 && document.getElementById('backup-input').style.display === 'none') {
+      showToast('Enter all 6 digits', 'error'); return;
+    }
+    showToast('Verified! Redirecting to dashboard...', 'success');
+    setTimeout(() => window.location.href = 'dashboard.html', 1500);
+  }
+
+  function showBackup() {
+    document.getElementById('backup-input').style.display = '';
+    document.getElementById('otp-inputs').style.display = 'none';
+  }
+
+  function backToLogin() {
+    ['twofa-screen','forgot-screen'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.display = 'none'; el.classList.remove('visible');
+    });
+    document.getElementById('login-screen').style.display = '';
+    document.getElementById('login-btn').textContent = 'Sign In';
+    document.getElementById('login-btn').disabled = false;
+  }
+
+  function showForgot(e) {
+    e.preventDefault();
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('forgot-screen').style.display = '';
+  }
+
+  function sendReset() {
+    showToast('Reset link sent! Check your inbox.', 'success');
+    setTimeout(backToLogin, 1800);
+  }
+
+  function togglePwd() {
+    const inp = document.getElementById('login-pwd');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+</script>
+</body>
+</html>
