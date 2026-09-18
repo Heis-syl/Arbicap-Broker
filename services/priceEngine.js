@@ -1,162 +1,179 @@
 /**
  * Price Engine
- * Subscribes to Binance WebSocket streams and:
+ * Polls CoinGecko's free public REST API (no key, no monthly credit cap —
+ * just a per-minute rate limit) and:
  *   1. Broadcasts price updates to connected clients via our own WS
- *   2. Updates OHLCV in the database
+ *   2. Builds 1h OHLCV candles in-memory from the polled ticks and
+ *      persists closed candles to the database
  *   3. Updates the Redis price cache
  *
- * When your matching engine is live, replace Binance streams
- * with your own internal trade events from the order book.
+ * NOTE: CoinGecko's free tier has no live trade-tape or WebSocket kline
+ * stream, so:
+ *   - There is no per-trade feed anymore (publishTrade is not called).
+ *     Re-enable this once your own matching engine produces real trades.
+ *   - Candles are built ourselves from periodic price snapshots rather
+ *     than fetched pre-made, so they're an approximation, not a true
+ *     tick-accurate OHLC. Good enough until you have your own feed.
+ *
+ * When your matching engine is live, replace this file's polling with
+ * your own internal trade events from the order book.
  */
 'use strict';
-const WebSocket  = require('ws');
 const { redis }  = require('./redis');
 const { query }  = require('../models/db');
-const { publishTicker, publishKline, publishTrade, publishOrderBook } = require('./websocket');
+const { publishTicker, publishKline } = require('./websocket');
 const { logger } = require('./logger');
 
-const SYMBOLS = ['btcusdt','ethusdt','bnbusdt','solusdt','xrpusdt','adausdt','dogeusdt','maticusdt','avaxusdt','dotusdt','linkusdt','ltcusdt'];
-const INTERVALS = ['1m','5m','15m','1h','4h','1d'];
+// Binance-style symbol -> CoinGecko asset id
+const SYMBOL_TO_GECKO_ID = {
+  btcusdt:   'bitcoin',
+  ethusdt:   'ethereum',
+  bnbusdt:   'binancecoin',
+  solusdt:   'solana',
+  xrpusdt:   'ripple',
+  adausdt:   'cardano',
+  dogeusdt:  'dogecoin',
+  maticusdt: 'matic-network',
+  avaxusdt:  'avalanche-2',
+  dotusdt:   'polkadot',
+  linkusdt:  'chainlink',
+  ltcusdt:   'litecoin',
+};
+const GECKO_IDS = Object.values(SYMBOL_TO_GECKO_ID);
+const ID_TO_SYMBOL = Object.fromEntries(
+  Object.entries(SYMBOL_TO_GECKO_ID).map(([sym, id]) => [id, sym.toUpperCase()])
+);
 
-// Track ONE live connection per stream key, not an ever-growing list.
-// Fixes the memory leak: previously every reconnect pushed a new socket
-// into wsConnections without ever removing the dead one, so the array
-// (and every buffer/listener attached to each dead socket) grew forever.
-const activeConnections = new Map(); // key -> { ws, retries }
+const POLL_INTERVAL_MS = 10000; // 10s — 6 calls/min for one batched request, well under CoinGecko's free rate limit
+const CANDLE_INTERVAL_MS = 60 * 60 * 1000; // 1h candles, built from ticks
+const COINGECKO_URL = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${GECKO_IDS.join(',')}&price_change_percentage=24h`;
 
+// In-memory candle-in-progress per symbol
+const activeCandles = new Map(); // symbol -> { openTime, open, high, low, close, volume, trades }
+
+let pollTimer = null;
+let consecutiveErrors = 0;
 const MAX_BACKOFF_MS = 60000;
-const BASE_BACKOFF_MS = 3000;
-
-function backoffDelay(retries) {
-  const delay = Math.min(BASE_BACKOFF_MS * 2 ** retries, MAX_BACKOFF_MS);
-  // add jitter so many streams don't all retry in lockstep
-  return delay + Math.floor(Math.random() * 1000);
-}
 
 function startPriceEngine() {
-  connectStream('miniTicker', buildMiniTickerUrl(), handleMiniTickerMessage);
-  connectStream('trade', buildTradeUrl(), handleTradeMessage);
-  connectStream('kline_1h', buildKlineUrl('1h'), (raw) => handleKlineMessage(raw, '1h'));
-  logger.info('Price engine connecting to market data streams...');
+  poll();
+  logger.info(`Price engine polling CoinGecko every ${POLL_INTERVAL_MS / 1000}s for: ${GECKO_IDS.join(', ')}`);
 }
 
-function buildMiniTickerUrl() {
-  const streams = SYMBOLS.map(s => `${s}@miniTicker`).join('/');
-  return `wss://stream.binance.com:9443/stream?streams=${streams}`;
-}
-function buildTradeUrl() {
-  const streams = SYMBOLS.map(s => `${s}@trade`).join('/');
-  return `wss://stream.binance.com:9443/stream?streams=${streams}`;
-}
-function buildKlineUrl(interval) {
-  const streams = SYMBOLS.map(s => `${s}@kline_${interval}`).join('/');
-  return `wss://stream.binance.com:9443/stream?streams=${streams}`;
-}
-
-// ── GENERIC CONNECTION MANAGER ─────────────────
-// One function handles connect + cleanup + backoff for every stream,
-// so the leak/backoff fix only has to live in one place.
-function connectStream(key, url, onMessage) {
-  const ws = new WebSocket(url);
-  const state = activeConnections.get(key) || { ws: null, retries: 0 };
-  state.ws = ws;
-  activeConnections.set(key, state);
-
-  ws.on('message', onMessage);
-
-  // Catches HTTP-level rejections (e.g. Binance returning 451 for a
-  // blocked region/IP) BEFORE the WS handshake completes. Previously
-  // these were invisible — they don't fire 'error' with a useful
-  // message, so the real cause never showed up in logs.
-  ws.on('unexpected-response', (req, res) => {
-    logger.error(`${key} WS rejected by server: HTTP ${res.statusCode} ${res.statusMessage}`);
-    ws.terminate();
-  });
-
-  ws.on('error', (e) => {
-    logger.error(`${key} WS error:`, e && e.message ? e.message : e, e && e.code ? `(code: ${e.code})` : '');
-  });
-
-  ws.on('close', (code, reason) => {
-    // Remove listeners explicitly so the dead socket has nothing
-    // still referencing it and can be garbage collected.
-    ws.removeAllListeners();
-
-    const current = activeConnections.get(key);
-    const retries = current ? current.retries + 1 : 1;
-    const delay = backoffDelay(retries);
-
-    logger.warn(`${key} stream closed (code ${code}${reason ? `, reason: ${reason}` : ''}) — reconnecting in ${Math.round(delay / 1000)}s (attempt ${retries})`);
-
-    activeConnections.set(key, { ws: null, retries });
-    setTimeout(() => connectStream(key, url, onMessage), delay);
-  });
-}
-
-// ── MESSAGE HANDLERS ───────────────────────────
-async function handleMiniTickerMessage(raw) {
+async function poll() {
   try {
-    const { data: d } = JSON.parse(raw);
-    if (!d || !d.s) return;
+    const res = await fetch(COINGECKO_URL);
 
-    const sym   = d.s;
-    const price = parseFloat(d.c);
-    const ch24  = parseFloat(d.P);
-    const vol   = parseFloat(d.v);
-
-    await redis.hset('prices', sym, JSON.stringify({ price, ch24, vol, ts: Date.now() }));
-
-    publishTicker(sym, {
-      price, ch24,
-      high: parseFloat(d.h),
-      low:  parseFloat(d.l),
-      vol,
-      volQuote: parseFloat(d.q),
-    });
-  } catch { /* ignore parse errors */ }
-}
-
-async function handleTradeMessage(raw) {
-  try {
-    const { data: t } = JSON.parse(raw);
-    if (!t || !t.s) return;
-    publishTrade(t.s, {
-      price:   parseFloat(t.p),
-      qty:     parseFloat(t.q),
-      isBuyer: !t.m,
-      time:    t.T,
-      tradeId: t.t,
-    });
-  } catch { /* ignore */ }
-}
-
-async function handleKlineMessage(raw, interval) {
-  try {
-    const { data: msg } = JSON.parse(raw);
-    if (!msg || !msg.k) return;
-    const k = msg.k;
-    const candle = {
-      time:   Math.floor(k.t / 1000),
-      open:   parseFloat(k.o),
-      high:   parseFloat(k.h),
-      low:    parseFloat(k.l),
-      close:  parseFloat(k.c),
-      volume: parseFloat(k.v),
-      trades: k.n,
-      closed: k.x,
-    };
-
-    publishKline(k.s, interval, candle);
-
-    if (k.x) {
-      await query(`
-        INSERT INTO ohlcv (symbol, interval, open_time, open, high, low, close, volume, trades)
-        VALUES ($1,$2,to_timestamp($3),$4,$5,$6,$7,$8,$9)
-        ON CONFLICT (symbol, interval, open_time) DO UPDATE
-        SET open=$4, high=$5, low=$6, close=$7, volume=$8, trades=$9
-      `, [k.s, interval, Math.floor(k.t/1000), candle.open, candle.high, candle.low, candle.close, candle.volume, candle.trades]);
+    if (res.status === 429) {
+      consecutiveErrors++;
+      const delay = Math.min(POLL_INTERVAL_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
+      logger.warn(`CoinGecko rate limited (429) — backing off ${Math.round(delay / 1000)}s`);
+      pollTimer = setTimeout(poll, delay);
+      return;
     }
-  } catch { /* ignore */ }
+
+    if (!res.ok) {
+      throw new Error(`CoinGecko responded ${res.status}`);
+    }
+
+    const data = await res.json();
+    consecutiveErrors = 0;
+
+    for (const coin of data) {
+      const sym = ID_TO_SYMBOL[coin.id];
+      if (!sym) continue;
+
+      const price = coin.current_price;
+      const ch24  = coin.price_change_percentage_24h ?? 0;
+      const vol   = coin.total_volume ?? 0;
+
+      // Redis price cache
+      await redis.hset('prices', sym, JSON.stringify({ price, ch24, vol, ts: Date.now() }));
+
+      // Broadcast to connected clients
+      publishTicker(sym, {
+        price,
+        ch24,
+        high: coin.high_24h,
+        low:  coin.low_24h,
+        vol,
+        volQuote: vol,
+      });
+
+      updateCandle(sym, price, vol);
+    }
+  } catch (err) {
+    consecutiveErrors++;
+    const delay = Math.min(POLL_INTERVAL_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
+    logger.error('CoinGecko poll failed:', err.message, `— retrying in ${Math.round(delay / 1000)}s`);
+    pollTimer = setTimeout(poll, delay);
+    return;
+  }
+
+  pollTimer = setTimeout(poll, POLL_INTERVAL_MS);
+}
+
+// ── IN-MEMORY CANDLE BUILDER ───────────────────
+// Aggregates polled price ticks into 1h OHLCV candles since CoinGecko's
+// free tier doesn't provide a live kline stream.
+function updateCandle(sym, price, vol) {
+  const now = Date.now();
+  const bucketStart = Math.floor(now / CANDLE_INTERVAL_MS) * CANDLE_INTERVAL_MS;
+  const existing = activeCandles.get(sym);
+
+  if (!existing || existing.openTime !== bucketStart) {
+    // Close and persist the previous candle, if any
+    if (existing) {
+      finalizeCandle(sym, existing);
+    }
+    activeCandles.set(sym, {
+      openTime: bucketStart,
+      open: price,
+      high: price,
+      low:  price,
+      close: price,
+      volume: vol,
+      trades: 1,
+    });
+    // Publish the just-opened candle immediately so clients see it start
+    publishKline(sym, '1h', candleToPayload(activeCandles.get(sym), false));
+    return;
+  }
+
+  existing.high  = Math.max(existing.high, price);
+  existing.low   = Math.min(existing.low, price);
+  existing.close = price;
+  existing.volume = vol; // CoinGecko's 24h volume is cumulative, not per-tick, so we just track the latest value
+  existing.trades += 1;
+
+  publishKline(sym, '1h', candleToPayload(existing, false));
+}
+
+function candleToPayload(c, closed) {
+  return {
+    time:   Math.floor(c.openTime / 1000),
+    open:   c.open,
+    high:   c.high,
+    low:    c.low,
+    close:  c.close,
+    volume: c.volume,
+    trades: c.trades,
+    closed,
+  };
+}
+
+async function finalizeCandle(sym, c) {
+  publishKline(sym, '1h', candleToPayload(c, true));
+  try {
+    await query(`
+      INSERT INTO ohlcv (symbol, interval, open_time, open, high, low, close, volume, trades)
+      VALUES ($1,$2,to_timestamp($3),$4,$5,$6,$7,$8,$9)
+      ON CONFLICT (symbol, interval, open_time) DO UPDATE
+      SET open=$4, high=$5, low=$6, close=$7, volume=$8, trades=$9
+    `, [sym, '1h', Math.floor(c.openTime / 1000), c.open, c.high, c.low, c.close, c.volume, c.trades]);
+  } catch (err) {
+    logger.error(`Failed to persist candle for ${sym}:`, err.message);
+  }
 }
 
 module.exports = { startPriceEngine };
