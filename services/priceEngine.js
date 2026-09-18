@@ -44,29 +44,44 @@ const ID_TO_SYMBOL = Object.fromEntries(
   Object.entries(SYMBOL_TO_GECKO_ID).map(([sym, id]) => [id, sym.toUpperCase()])
 );
 
-const POLL_INTERVAL_MS = 10000; // 10s — 6 calls/min for one batched request, well under CoinGecko's free rate limit
+// 5 minutes = 8,640 calls/month for one batched request — comfortably
+// under CoinGecko's free Demo tier's 10,000/month cap (24/7 operation).
+// A shorter interval (e.g. 10s) would exhaust that monthly quota in
+// under 2 days and leave prices frozen for the rest of the month.
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
 const CANDLE_INTERVAL_MS = 60 * 60 * 1000; // 1h candles, built from ticks
 const COINGECKO_URL = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${GECKO_IDS.join(',')}&price_change_percentage=24h`;
+
+// Optional: set COINGECKO_API_KEY in your env to use a free CoinGecko
+// "Demo" API key (no credit card required — sign up at
+// coingecko.com/en/developers/dashboard). This ties your rate limit to
+// your own key instead of Railway's shared outbound IP, which is what
+// caused immediate 429s even at a low request rate.
+const COINGECKO_HEADERS = process.env.COINGECKO_API_KEY
+  ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+  : {};
 
 // In-memory candle-in-progress per symbol
 const activeCandles = new Map(); // symbol -> { openTime, open, high, low, close, volume, trades }
 
 let pollTimer = null;
 let consecutiveErrors = 0;
-const MAX_BACKOFF_MS = 60000;
+const BACKOFF_BASE_MS = 30000;   // 30s
+const MAX_BACKOFF_MS = 30 * 60000; // cap at 30 min so it never dwarfs the normal 5min cadence
 
 function startPriceEngine() {
   poll();
-  logger.info(`Price engine polling CoinGecko every ${POLL_INTERVAL_MS / 1000}s for: ${GECKO_IDS.join(', ')}`);
+  const keyStatus = process.env.COINGECKO_API_KEY ? 'with API key' : 'keyless (shared rate limit — consider setting COINGECKO_API_KEY)';
+  logger.info(`Price engine polling CoinGecko every ${POLL_INTERVAL_MS / 60000}min (${keyStatus}) for: ${GECKO_IDS.join(', ')}`);
 }
 
 async function poll() {
   try {
-    const res = await fetch(COINGECKO_URL);
+    const res = await fetch(COINGECKO_URL, { headers: COINGECKO_HEADERS });
 
     if (res.status === 429) {
       consecutiveErrors++;
-      const delay = Math.min(POLL_INTERVAL_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
+      const delay = Math.min(BACKOFF_BASE_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
       logger.warn(`CoinGecko rate limited (429) — backing off ${Math.round(delay / 1000)}s`);
       pollTimer = setTimeout(poll, delay);
       return;
@@ -104,7 +119,7 @@ async function poll() {
     }
   } catch (err) {
     consecutiveErrors++;
-    const delay = Math.min(POLL_INTERVAL_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
+    const delay = Math.min(BACKOFF_BASE_MS * 2 ** consecutiveErrors, MAX_BACKOFF_MS);
     logger.error('CoinGecko poll failed:', err.message, `— retrying in ${Math.round(delay / 1000)}s`);
     pollTimer = setTimeout(poll, delay);
     return;
